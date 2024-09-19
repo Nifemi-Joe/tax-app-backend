@@ -5,10 +5,10 @@ const { Schema } = mongoose;
 const clientSchema = new Schema({
 	name: {
 		type: String,
-		required: [true, 'Client name is required'],
+		required: [true, 'Company name is required'],
 		trim: true,
-		minlength: [2, 'Client name must be at least 2 characters long'],
-		maxlength: [100, 'Client name must not exceed 100 characters'],
+		minlength: [2, 'Company name must be at least 2 characters long'],
+		maxlength: [100, 'Company name must not exceed 100 characters'],
 	},
 	email: {
 		type: String,
@@ -33,11 +33,6 @@ const clientSchema = new Schema({
 		type: String,
 		trim: true,
 		maxlength: [255, 'Address must not exceed 255 characters'],
-	},
-	company: {
-		type: String,
-		trim: true,
-		maxlength: [255, 'Company name must not exceed 255 characters'],
 	},
 	clientTotalInvoice: {
 		type: Number,
