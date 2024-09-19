@@ -11,14 +11,14 @@ exports.createClient = asyncHandler(async (req, res) => {
 	await check('email', 'Please include a valid email').isEmail().run(req);
 	await check('phone', 'Phone number is required').isFloat().run(req);
 	await check('address', 'Address is required').not().isEmpty().run(req);
-	await check('company', 'Company Name is required').not().isEmpty().run(req);
+	// await check('company', 'Company Name is required').not().isEmpty().run(req);
 
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
 		return res.status(400).json({ errors: errors.array() });
 	}
 
-	const { name, email, phone, address,company, status = 'active' } = req.body;
+	const { name, email, phone, address, status = 'active' } = req.body;
 
 	const clientExists = await Client.findOne({ email });
 
@@ -31,7 +31,6 @@ exports.createClient = asyncHandler(async (req, res) => {
 		name,
 		email,
 		phone,
-		company,
 		address,
 		status,
 	});
@@ -45,7 +44,7 @@ exports.createClient = asyncHandler(async (req, res) => {
 				name: client.name,
 				email: client.email,
 				phone: client.phone,
-				company: client.company,
+				// company: client.company,
 				address: client.address,
 				status: client.status,
 			}
