@@ -2,12 +2,12 @@ const mongoose = require('mongoose');
 
 // Expense Schema
 const expenseSchema = new mongoose.Schema({
-	title: {
-		type: String,
-		required: [true, 'Title is required'],
-		trim: true,
-		maxlength: [500, 'Title cannot be more than 500 characters']
-	},
+	// title: {
+	// 	type: String,
+	// 	required: [true, 'Title is required'],
+	// 	trim: true,
+	// 	maxlength: [500, 'Title cannot be more than 500 characters']
+	// },
 	description: {
 		type: String,
 		trim: true,
