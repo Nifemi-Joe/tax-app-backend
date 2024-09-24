@@ -67,8 +67,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const transactionDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
 	// Calculate total fee including VAT
-	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd * (1 + invoiceData.vat / 100);
-	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn * (1 + invoiceData.vat / 100);
+	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
+	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
 
 	invoiceData.invoiceNo = invoiceNo;
 	invoiceData.referenceNumber = referenceNumber;
