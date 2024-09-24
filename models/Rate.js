@@ -1,9 +1,18 @@
 const mongoose = require('mongoose');
-
 const rateSchema = new mongoose.Schema({
-	value: { type: Number, required: true },
-	createdAt: { type: Date, default: Date.now },
+	value: {
+		type: Number,
+		required: true,
+	},
+	status: {
+		type: String,
+		default: 'active',
+		enum: ['active', 'deleted'],
+	},
+	createdAt: {
+		type: Date,
+		default: Date.now,
+	}
 });
 
-const Rate = mongoose.model('Rate', rateSchema);
-module.exports = Rate;
+module.exports = mongoose.model('Rate', rateSchema);
