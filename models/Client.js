@@ -38,6 +38,10 @@ const clientSchema = new Schema({
 		type: Number,
 		default: 0
 	},
+	clientAmountDue: {
+		type: Number,
+		default: 0
+	},
 	clientInvoices: {
 		type: Array
 	},

@@ -91,7 +91,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Update the client's total invoice amount
 	existingClient.clientTotalInvoice = totalAmountDue;
 	await existingClient.save();
-
+	recalculateClientTotals(invoiceData.clientId);
 	// Handle tax and other logic
 	const taxRate = determineTaxRate(savedInvoice);
 	const taxAmount = savedInvoice.totalInvoiceFee_ngn * (savedInvoice.vat / 100);
@@ -129,6 +129,7 @@ exports.updateInvoice = asyncHandler(async (req, res) => {
 		new: true,
 		runValidators: true,
 	});
+	recalculateClientTotals(updatedInvoice.clientId);
 
 	if (!updatedInvoice) {
 		return res.status(404).json({ success: false, error: 'Invoice not found' });
@@ -141,6 +142,26 @@ exports.updateInvoice = asyncHandler(async (req, res) => {
 	});
 });
 
+const recalculateClientTotals = async (clientId) => {
+	const result = await Revenue.aggregate([
+		{ $match: { clientId: mongoose.Types.ObjectId(clientId) } },
+		{
+			$group: {
+				_id: null,
+				totalAmountDue: { $sum: "$amountDue" },
+				totalInvoicesNGN: { $sum: "$totalInvoiceFee_ngn" }
+			}
+		}
+	]);
+
+	const totals = result[0] || { totalAmountDue: 0, totalInvoicesNGN: 0 };
+
+	await Client.findByIdAndUpdate(clientId, {
+		clientAmountDue: totals.totalAmountDue,
+		clientTotalInvoice: totals.totalInvoicesNGN
+	});
+};
+
 // @desc    Print an invoice as a PDF
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
@@ -148,6 +169,7 @@ exports.printInvoice = asyncHandler(async (req, res) => {
 	const { id } = req.params;
 
 	const invoice = await Revenue.findById(id);
+	recalculateClientTotals(invoice.clientId);
 
 	if (!invoice) {
 		return res.status(404).json({ success: false, error: 'Invoice not found' });
@@ -206,7 +228,6 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
 	}
 
 	const invoices = await Revenue.find({ status: { $ne: 'deleted' } });
-
 	res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices});
 });
 
@@ -241,6 +262,8 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
 
 exports.softDelete = asyncHandler( async (req,  res) => {
 	const client = await Revenue.findByIdAndUpdate(req.body.id, { status: 'deleted' });
+	recalculateClientTotals(client.clientId);
+
 	res.status(200).json({
 		responseCode: "00",
 		responseMessage: "Client deleted successfully"
@@ -251,6 +274,8 @@ exports.softDelete = asyncHandler( async (req,  res) => {
 exports.deleteInvoice = async (req, res) => {
 	try {
 		const deletedInvoice = await Revenue.findByIdAndDelete(req.params.id);
+		recalculateClientTotals(deletedInvoice.clientId);
+
 		if (!deletedInvoice) return res.status(404).json({ message: 'Invoice not found' });
 		res.status(200).json({ message: 'Invoice deleted successfully' });
 	} catch (error) {
