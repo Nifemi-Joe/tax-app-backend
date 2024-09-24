@@ -9,6 +9,10 @@ const rateSchema = new mongoose.Schema({
 		default: 'active',
 		enum: ['active', 'deleted'],
 	},
+	currency: {
+		type: String,
+		default: 'USD',
+	},
 	createdAt: {
 		type: Date,
 		default: Date.now,
