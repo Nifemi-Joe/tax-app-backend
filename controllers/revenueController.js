@@ -81,16 +81,18 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const newInvoice = new Revenue(invoiceData);
 	const savedInvoice = await newInvoice.save();
 
-	// Update the totalInvoiceAmount in the Client model
 	const totalInvoices = await Revenue.aggregate([
-		{ $match: { clientId: new mongoose.Types.ObjectId(clientId)} },
+		{ $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
 		{ $group: { _id: null, clientTotalInvoice: { $sum: "$amountDue" } } }
 	]);
 
-	const totalAmount = totalInvoices[0]?.totalAmount || 0;
-	existingClient.totalInvoiceAmount = totalAmount;
+	const totalAmountDue = totalInvoices[0]?.clientTotalInvoice || 0;
+
+	// Update the client's total invoice amount
+	existingClient.clientTotalInvoice = totalAmountDue;
 	await existingClient.save();
 
+	// Handle tax and other logic
 	const taxRate = determineTaxRate(savedInvoice);
 	const taxAmount = savedInvoice.totalInvoiceFee_ngn * (savedInvoice.vat / 100);
 	const netAmount = savedInvoice.totalInvoiceFee_ngn - taxAmount;
