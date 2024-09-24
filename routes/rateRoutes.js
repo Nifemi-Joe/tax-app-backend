@@ -7,17 +7,17 @@ const {
 	getRateHistory,
 	softDeleteRate,
 	getAllActiveRates
-} = require('../controllers/RateController');
+} = require('../controllers/rateController');
 
 // @route   POST /api/rates
 // @desc    Create a new rate
 // @access  Private
-router.post('/', createRate);
+router.post('/create', createRate);
 
 // @route   PUT /api/rates/:id
 // @desc    Update existing rate
 // @access  Private
-router.put('/:id', updateRate);
+router.put('/update/:id', updateRate);
 
 // @route   GET /api/rates/current
 // @desc    Get the current/latest rate
@@ -32,7 +32,7 @@ router.get('/history', getRateHistory);
 // @route   PUT /api/rates/:id/delete
 // @desc    Soft delete a rate
 // @access  Private
-router.put('/:id/delete', softDeleteRate);
+router.put('/delete/:id', softDeleteRate);
 
 // @route   GET /api/rates
 // @desc    Get all active rates (not deleted)
