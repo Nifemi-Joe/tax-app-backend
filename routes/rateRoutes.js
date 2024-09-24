@@ -37,6 +37,6 @@ router.put('/:id/delete', softDeleteRate);
 // @route   GET /api/rates
 // @desc    Get all active rates (not deleted)
 // @access  Private
-router.get('/', getAllActiveRates);
+router.get('/read', getAllActiveRates);
 
 module.exports = router;
