@@ -21,7 +21,13 @@ router.post('/register', registerUser);
 // @route   POST /api/users/login
 // @desc    Authenticate a user and get token
 // @access  Public
-router.post('/login', loginUser);
+const checkFirstLogin = (req, res, next) => {
+	if (req.user.firstLogin) {
+		return res.status(400).json({ message: 'You must change your password on first login' });
+	}
+	next();
+};
+router.post('/login', checkFirstLogin,loginUser);
 
 // @route   GET /api/users/profile
 // @desc    Get user profile
