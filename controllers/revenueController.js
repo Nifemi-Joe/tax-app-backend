@@ -169,7 +169,6 @@ exports.printInvoice = asyncHandler(async (req, res) => {
 	const { id } = req.params;
 
 	const invoice = await Revenue.findById(id);
-	await recalculateClientTotals(invoice.clientId);
 
 	if (!invoice) {
 		return res.status(404).json({ success: false, error: 'Invoice not found' });

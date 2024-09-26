@@ -49,6 +49,7 @@ const InvoiceSchema = new Schema({
 	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES'], required: true },
 	companyName: { type: String, required: true },
 	service1: ServiceSchema,
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	roles: [RoleSchema],
 	service2: ServiceSchema,
 	totalInvoiceFee_usd: { type: Number },

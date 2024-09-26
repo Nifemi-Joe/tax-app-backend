@@ -28,11 +28,6 @@ const userSchema = new mongoose.Schema({
 		required: [true, 'Password is required'],
 		minlength: [6, 'Password must be at least 6 characters long']
 	},
-	role: {
-		type: String,
-		enum: ['user', 'admin'],
-		default: 'user'
-	},
 	gender: {
 		type: String,
 		enum: ['male', 'female'],
@@ -46,14 +41,28 @@ const userSchema = new mongoose.Schema({
 	address: {
 		type: String
 	},
+	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
+	role: { type: String, enum: ['admin', 'employee'], default: 'employee' }, // Role-based access
+	firstLogin: { type: Boolean, default: true }, // Force password change on first login
 	resetPasswordToken: String,
-	resetPasswordExpire: Date
+	resetPasswordExpire: Date,
+	createdAt: {
+		type: Date,
+		default: Date.now,
+	},
+	updatedAt: {
+		type: Date,
+		default: Date.now,
+	},
 }, {
 	timestamps: true
 });
 
 // Encrypt password before saving user
 userSchema.pre('save', async function (next) {
+	if (this.isModified()) {
+		this.updatedAt = Date.now();
+	}
 	if (!this.isModified('password')) return next();
 
 	try {

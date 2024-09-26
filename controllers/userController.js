@@ -91,6 +91,8 @@ exports.registerUser = asyncHandler(async (req, res) => {
 // @desc    Authenticate a user and get token
 // @route   POST /api/users/login
 // @access  Public
+
+
 exports.loginUser = asyncHandler(async (req, res) => {
 	// Validate request
 	const errors = validationResult(req);
@@ -229,7 +231,7 @@ exports.getUserProfile = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/profile
 // @access  Private
 exports.updateUserProfile = asyncHandler(async (req, res) => {
-	const { name, email, password } = req.body;
+	const data = req.body;
 
 	// Validate request
 	const errors = validationResult(req);
@@ -239,12 +241,13 @@ exports.updateUserProfile = asyncHandler(async (req, res) => {
 
 	try {
 		const updateData = {};
-		if (name) updateData.name = name;
-		if (email) updateData.email = email;
-		if (password) {
+		if (data.name) updateData.name = data.name;
+		if (data.email) updateData.email = data.email;
+		if (data.password) {
 			// Hash new password
-			updateData.password = await bcrypt.hash(password, 10);
+			updateData.password = await bcrypt.hash(data.password, 10);
 		}
+		if (data.firstLogin) updateData.firstLogin = data.firstLogin
 
 		// Find and update user
 		const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('-password');
