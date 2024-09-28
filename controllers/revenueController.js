@@ -118,6 +118,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const taxEntity = new Tax({
 		taxId: generateRandomNumberWithPrefix('TAX'),
 		invoiceNo: savedInvoice.invoiceNo,
+		clientId: savedInvoice.clientId,
 		taxType: "VAT", // Example tax type
 		totalAmount: savedInvoice.totalInvoiceFee_ngn,
 		taxRate: savedInvoice.vat,
@@ -166,25 +167,23 @@ exports.updateInvoice = asyncHandler(async (req, res) => {
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
 exports.printInvoice = asyncHandler(async (req, res) => {
-	const { id } = req.params;
+	try {
+		const { id } = req.params;
+		const invoice = await Revenue.findById(id);
 
-	const invoice = await Revenue.findById(id);
+		if (!invoice) {
+			return res.status(404).json({ success: false, error: 'Invoice not found' });
+		}
 
-	if (!invoice) {
-		return res.status(404).json({ success: false, error: 'Invoice not found' });
+		res.status(200).json({
+			responseCode: "00",
+			responseMessage: "Completed successfully",
+			responseData: invoice,
+		});
+	} catch (error) {
+		console.error('Error in printInvoice:', error.message);
+		res.status(500).json({ success: false, error: 'Internal Server Error' });
 	}
-
-	// const invoiceHTML = path.resolve(__dirname, `../templates/${invoice.invoiceType.toLowerCase()}_invoice.html`);
-	// const invoicePDF = await generatePDF(invoiceHTML, invoice);
-	//
-	// res.contentType("application/pdf");
-	// res.send(invoicePDF);
-
-	res.status(200).json({
-		responseCode: "00",
-		responseMessage: "Completed successfully",
-		responseData: invoice
-	});
 });
 
 exports.downloadInvoice = asyncHandler(async (req, res) => {

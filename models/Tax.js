@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const TaxSchema = new mongoose.Schema({
 		taxId: { type: String, unique: true, required: true },
 	invoiceNo: { type: String, required: true },
+	clientId: { type: String, required: true },
+
 	taxType: { type: String, required: true },
 	totalAmount: { type: Number, required: true },
 	taxRate: { type: Number, required: true },
