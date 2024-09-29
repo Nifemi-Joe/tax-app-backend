@@ -42,7 +42,7 @@ router.delete('/:id', deleteTax);
 // @access  Private
 router.post('/calculate', calculateAndApplyTaxes);
 
-router.post('/pay/:taxId', payTax);
+router.post('/pay/:id', payTax);
 router.get('/summary', generateTaxSummary);
 
 // @route   GET /api/taxes/report
