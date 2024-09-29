@@ -3,6 +3,8 @@ const { generateTaxReportPDF } = require('../utils/pdfGenerator');
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
 const path = require('path');
+const Employee = require("../models/Employee");
+const Client = require("../models/Client");
 
 // @desc    Get all taxes
 // @route   GET /api/taxes
@@ -171,16 +173,28 @@ exports.createTaxEntity = async () => {
 };
 
 // Pay Tax
-exports.payTax = async (taxId) => {
-	const tax = await Tax.findById(taxId);
-	if (!tax) throw new Error('Tax entity not found');
+exports.payTax = asyncHandler(async (req, res) => {
+	const tax = await Tax.findById(req.params.id);
+	if (!tax) {
+		res.status(404).json({ responseCode: "22", responseMessage: 'Tax entity not found' });
+		return;
+	}
+	const updates = req.body;
 
-	tax.status = 'paid';
-	await tax.save();
-
+	const updatedTax = await Tax.findByIdAndUpdate(req.params.id, updates, {
+		new: true,
+		runValidators: true,
+	});
+	// tax.status = 'paid';
+	// await tax.save();
+	res.status(200).json({
+		responseCode: "00",
+		responseMessagee: "Tax paid successfully!",
+		responseData: updatedTax
+	});
 	// Update the total tax paid
-	await updateTaxTotals();
-};
+	// await updateTaxTotals();
+});
 
 // Generate Summary
 exports.generateTaxSummary = async () => {
