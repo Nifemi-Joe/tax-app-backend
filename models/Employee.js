@@ -29,19 +29,13 @@ const employeeSchema = new Schema({
 		unique: true,
 		trim: true,
 		lowercase: true,
-		validate: {
-			validator: (v) => /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(v),
-			message: 'Invalid email address'
-		}
+
 	},
 	phoneNumber: {
 		type: String,
 		required: true,
 		trim: true,
-		validate: {
-			validator: (v) => /^\+?[1-9]\d{1,14}$/.test(v),
-			message: 'Invalid phone number'
-		}
+
 	},
 	address: {
 		type: String,
