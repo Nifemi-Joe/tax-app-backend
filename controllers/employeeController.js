@@ -7,7 +7,8 @@ const nodemailer = require('nodemailer');
 // @route   POST /api/employees
 // @access  Private
 exports.createEmployee = asyncHandler(async (req, res) => {
-	await check('name', 'Name is required').not().isEmpty().run(req);
+	await check('firstname', 'Firstname is required').not().isEmpty().run(req);
+	await check('surname', 'Surname is required').not().isEmpty().run(req);
 	await check('email', 'Please include a valid email').isEmail().run(req);
 	await check('position', 'Position is required').not().isEmpty().run(req);
 	await check('salary', 'Salary must be a positive number').isFloat({ min: 0 }).run(req);
