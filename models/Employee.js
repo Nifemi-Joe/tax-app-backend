@@ -3,12 +3,25 @@ const { Schema } = mongoose;
 
 // Employee Schema
 const employeeSchema = new Schema({
-	name: {
+	firstname: {
 		type: String,
 		required: true,
 		trim: true,
-		minlength: 3,
-		maxlength: 100
+		minlength: 2,
+		maxlength: 200
+	},
+	surname: {
+		type: String,
+		required: true,
+		trim: true,
+		minlength: 2,
+		maxlength: 200
+	},
+	middlename: {
+		type: String,
+		trim: true,
+		minlength: 2,
+		maxlength: 200
 	},
 	email: {
 		type: String,
