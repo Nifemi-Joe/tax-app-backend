@@ -49,7 +49,7 @@ exports.registerUser = asyncHandler(async (req, res) => {
 	if (!errors.isEmpty()) {
 		return res.status(400).json({ responseCode: "22", responseMessage: errors.array() });
 	}
-	const { name, email, password } = req.body;
+	const { name, email, password, phoneNumber, company } = req.body; // Include phoneNumber and company
 	console.log(password);
 	try {
 		// Check if user already exists
@@ -58,17 +58,8 @@ exports.registerUser = asyncHandler(async (req, res) => {
 			return res.status(400).json({ responseCode: "22", responseMessage: "User already exists" });
 		}
 
-		// Hash password
-		// const hashedPassword = await bcrypt.hash(password, 10);
-		// console.log(hashedPassword)
-		console.log(password);
-
 		// Create new user
-		const newUser = await User.create({
-			name,
-			email,
-			password: password,
-		});
+		const newUser = await User.create(req.body);
 
 		// Send response
 		res.status(201).json({
@@ -77,7 +68,7 @@ exports.registerUser = asyncHandler(async (req, res) => {
 			responseData: newUser,
 		});
 	} catch (error) {
-		logger.error('Error registering user:', error.message);
+		logger.error('Error registering user:', error.stack); // Log stack trace for debugging
 		res.status(500).json({ responseCode: "22", responseMessage: "Server error" });
 	}
 });
