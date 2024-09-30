@@ -61,7 +61,7 @@ const InvoiceSchema = new Schema({
 	accountName: { type: String },
 	accountNumber: { type: String },
 	bankName: { type: String },
-	currency: { type: String },
+	currency: { type: String, default: "NGN" },
 	taxDetailsName: { type: String },
 	taxDetailsVatNumber: { type: String }
 }, { timestamps: true });

@@ -117,7 +117,7 @@ exports.loginUser = asyncHandler(async (req, res) => {
 
 		// Compare passwords
 		const trimmedPassword = password.trim();
-		const isMatch = bcrypt.compare(user.password, password);
+		const isMatch = await bcrypt.compare(password, user.password);
 
 		console.log("Password Match:", isMatch); // Add more debugging info if necessary
 
