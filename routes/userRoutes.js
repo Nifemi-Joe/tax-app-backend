@@ -27,7 +27,8 @@ const checkFirstLogin = (req, res, next) => {
 	}
 	next();
 };
-router.post('/login', checkFirstLogin,loginUser);
+router.post('/login', loginUser, checkFirstLogin);
+
 
 // @route   GET /api/users/profile
 // @desc    Get user profile
