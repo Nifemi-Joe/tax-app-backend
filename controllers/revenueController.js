@@ -258,15 +258,29 @@ exports.generateReceipt = asyncHandler(async (req, res) => {
 	res.status(200).json({ success: true, message: 'Receipt generation functionality is currently disabled' });
 });
 
-exports.softDelete = asyncHandler( async (req,  res) => {
-	const client = await Revenue.findByIdAndUpdate(req.body.id, { status: 'deleted' });
-	await recalculateClientTotals(client.clientId);
+exports.softDelete = asyncHandler(async (req, res) => {
+	// Soft delete the revenue by updating its status
+	const revenue = await Revenue.findByIdAndUpdate(req.body.id, { status: 'deleted' });
+
+	if (!revenue) {
+		return res.status(404).json({
+			responseCode: "01",
+			responseMessage: "Revenue not found"
+		});
+	}
+
+	// Recalculate client totals
+	await recalculateClientTotals(revenue.clientId);
+
+	// Find and delete taxes associated with this revenue's invoiceNo
+	await Tax.deleteMany({ invoiceNo: revenue.invoiceNo });
 
 	res.status(200).json({
 		responseCode: "00",
-		responseMessage: "Client deleted successfully"
-	})
+		responseMessage: "Revenue and associated taxes deleted successfully"
+	});
 });
+
 
 
 exports.deleteInvoice = async (req, res) => {
