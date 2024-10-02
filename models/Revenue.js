@@ -48,7 +48,12 @@ const InvoiceSchema = new Schema({
 	status: { type: String, enum: ['Pending', 'Paid', 'Overdue'], required: true },
 	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES'], required: true },
 	companyName: { type: String, required: true },
-	service1: ServiceSchema,
+	service1: {
+		type: ServiceSchema,
+		required: [true, 'Service1 is required'],
+		default: {}
+	},
+
 	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	roles: [RoleSchema],
 	service2: ServiceSchema,

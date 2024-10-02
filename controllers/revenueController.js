@@ -16,23 +16,41 @@ const generateRandomNumberWithPrefix = (prefix) => {
 	return `${prefix}${Math.floor(10000 + Math.random() * 90000)}`;
 };
 const recalculateClientTotals = async (clientId) => {
-	const result = await Revenue.aggregate([
-		{ $match: { clientId: mongoose.Types.ObjectId(clientId) } },
-		{
-			$group: {
-				_id: null,
-				totalAmountDue: { $sum: "$amountDue" },
-				totalInvoicesNGN: { $sum: "$totalInvoiceFee_ngn" }
-			}
+	try {
+		// Validate the clientId
+		if (!mongoose.Types.ObjectId.isValid(clientId)) {
+			throw new Error('Invalid client ID');
 		}
-	]);
 
-	const totals = result[0] || { totalAmountDue: 0, totalInvoicesNGN: 0 };
+		const objectId = new mongoose.Types.ObjectId(clientId);
 
-	await Client.findByIdAndUpdate(clientId, {
-		clientAmountDue: totals.totalAmountDue,
-		clientTotalInvoice: totals.totalInvoicesNGN
-	});
+		// Fetch all active (non-deleted) invoices for the client
+		const invoices = await Revenue.find({ clientId: objectId, status: { $ne: 'deleted' } });
+
+		// Calculate totals
+		let totalPaid = 0;
+		let totalDue = 0;
+		let totalAmount = 0;
+
+		invoices.forEach(invoice => {
+			totalPaid += invoice.amountPaid;
+			totalDue += invoice.amountDue;
+			totalAmount += invoice.totalInvoiceFeePlusVat_ngn;
+		});
+
+		// Update client totals
+		await Client.findByIdAndUpdate(clientId, {
+			clientAmountPaid: totalPaid,
+			clientAmountDue: totalAmount - totalPaid,
+			clientTotalInvoice: totalAmount,
+			updatedAt: Date.now(),
+		});
+
+		console.log(`Recalculated totals for client ID: ${clientId}`);
+	} catch (error) {
+		console.error(`Error in recalculateClientTotals: ${error.message}`);
+		throw error; // Rethrow to be handled by the caller
+	}
 };
 
 function determineTaxRate(invoice) {
@@ -105,10 +123,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		{ $group: { _id: null, clientTotalInvoice: { $sum: "$amountDue" } } }
 	]);
 
-	const totalAmountDue = totalInvoices[0]?.clientTotalInvoice || 0;
-
 	// Update the client's total invoice amount
-	existingClient.clientTotalInvoice = totalAmountDue;
+	existingClient.clientTotalInvoice = totalInvoices[0]?.clientTotalInvoice || 0;
 	await existingClient.save();
 	await recalculateClientTotals(invoiceData.clientId);
 	// Handle tax and other logic
@@ -142,24 +158,35 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
-exports.updateInvoice = asyncHandler(async (req, res) => {
-	const { id } = req.params;
+exports.updateInvoice = asyncHandler(async (req, res, next) => {
+	try {
+		const { id } = req.params;
 
-	const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
-		new: true,
-		runValidators: true,
-	});
-	await recalculateClientTotals(updatedInvoice.clientId);
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({ success: false, error: 'Invalid invoice ID' });
+		}
 
-	if (!updatedInvoice) {
-		return res.status(404).json({ success: false, error: 'Invoice not found' });
+		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
+			new: true,
+			runValidators: true,
+		});
+
+		if (!updatedInvoice) {
+			return res.status(404).json({ success: false, error: 'Invoice not found' });
+		}
+		console.log('Client ID:', updatedInvoice.clientId);
+
+		await recalculateClientTotals(updatedInvoice.clientId);
+
+		res.status(200).json({
+			responseCode: "00",
+			responseMessage: "Invoice updated successfully",
+			responseData: updatedInvoice
+		});
+	} catch (error) {
+		console.error(error); // Log the specific error
+		res.status(500).json({ success: false, error: 'Internal server error' });
 	}
-
-	res.status(200).json({
-		responseCode: "00",
-		responseMessage: "Invoice updated successfully",
-		responseData: updatedInvoice
-	});
 });
 
 

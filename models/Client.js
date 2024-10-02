@@ -43,6 +43,10 @@ const clientSchema = new Schema({
 		type: Number,
 		default: 0
 	},
+	clientAmountPaid: {
+		type: Number,
+		default: 0
+	},
 	clientInvoices: {
 		type: Array
 	},
