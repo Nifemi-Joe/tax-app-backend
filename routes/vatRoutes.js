@@ -36,6 +36,6 @@ router.get('/active', getActiveVATS);
 router.get('/inactive', getInactiveVATS);
 
 // Get list of all VAT rates
-router.get('/', getAllVATS);
+router.get('/read', getAllVATS);
 
 module.exports = router;
