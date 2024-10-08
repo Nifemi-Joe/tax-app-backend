@@ -4,6 +4,151 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const asyncHandler = require('express-async-handler');
 const { logger } = require('../utils/logger');
+const logAction = require("../utils/auditLogger");
+const Service = require("../models/Service");
+
+// Generate JWT
+const generateToken = (id) => {
+	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
+
+// @desc    Register new user
+// @route   POST /api/auth/register
+// @access  Public
+exports.userRegister = asyncHandler(async (req, res) => {
+	const { email } = req.body;
+
+	// Validation
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		res.status(400);
+		throw new Error(errors.array().map(err => err.msg).join(', '));
+	}
+
+	const userExists = await User.findOne({ email });
+
+	if (userExists) {
+		res.status(400);
+		throw new Error('User already exists');
+	}
+
+	const user = await User.create(req.body);
+
+	if (user) {
+		res.status(201).json({
+			responseCode: "00",
+			responseMessage: "User registered successfully",
+			responseData: user,
+			token: generateToken(user._id)
+		});
+		const users = await User.findById(req.user._id,); // Assuming you have a User model
+		await logAction(req.user._id || "System", users.name || users.firstname + " " + users.lastname, 'registered_user', "User Management", `Registered user ${user.name || user.firstname + " " + user.lastname}  by ${users.email  || "System"}`, req.body.ip );
+	} else {
+		res.status(400);
+		throw new Error('Invalid user data');
+	}
+});
+
+// @desc    Authenticate user & get token
+// @route   POST /api/auth/login
+// @access  Public
+exports.authUser = asyncHandler(async (req, res) => {
+	const { email, password } = req.body;
+
+	// Validation
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		res.status(400);
+		throw new Error(errors.array().map(err => err.msg).join(', '));
+	}
+
+	const user = await User.findOne({ email });
+
+	if (user && (await user.matchPassword(password))) {
+		res.json({
+			responseCode: "00",
+			responseMessage: "Completed Successfully",
+			responseData: user,
+			token: generateToken(user._id)
+		});
+		console.log(user);
+		let userName = user.name ? user.name : user.firstname + " " + user.lastname;
+		console.log(userName)
+		userName = user.phoneNumber;
+		console.log(userName);
+
+		// const users = await User.findById(req.user._id,); // Assuming you have a User model
+		await logAction(user._id, user.name ? user.name : user.firstname + " " + user.lastname, 'logged_in_user', "User Management", `User ${user.name ? user.name : user.firstname + " " + user.lastname} logged in`, req.body.ip );
+	} else {
+		res.status(401);
+		throw new Error('Invalid email or password');
+	}
+});
+
+// @desc    Get user profile
+// @route   GET /api/auth/profile
+// @access  Private
+exports.getProfileUser = asyncHandler(async (req, res) => {
+	const user = await User.findById(req.user._id);
+
+	if (user) {
+		res.json({
+			responseCode: "00",
+			responseMessage: "Completed Successfully",
+			responseData: user
+		});
+	} else {
+		res.status(404);
+		throw new Error('User not found');
+	}
+});
+
+// @desc    Reset user password
+// @route   POST /api/auth/reset-password
+// @access  Private (Admin)
+exports.resetUserPassword = asyncHandler(async (req, res) => {
+	const { userId, newPassword } = req.body;
+
+	const user = await User.findById(userId);
+
+	if (!user) {
+		res.status(404);
+		throw new Error('User not found');
+	}
+
+	user.password = newPassword;
+	await user.save();
+
+	res.json({ message: 'Password reset successfully' });
+});
+
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+exports.updateUser = asyncHandler(async (req, res) => {
+	const { name, email, role, permissions, firstname, lastname } = req.body;
+
+	const user = await User.findById(req.params.id);
+
+	if (user) {
+		const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+		res.json({
+			responseCode: "00",
+			responseMessage: "Completed Successfully",
+			responseData: updatedUser
+		});
+		const users = await User.findById(req.user._id,); // Assuming you have a User model
+		await logAction(req.user._id, users.name || users.firstname + " " + users.lastname, 'updated_user', "User Management", `User ${updatedUser.name || updatedUser.firstname + " " + updatedUser.lastname} updated by ${users.name || users.firstname + " " + users.lastname}`, req.body.ip );
+	} else {
+		res.status(404);
+		throw new Error('User not found');
+	}
+});
+
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
 
 // Function to verify a password
 async function verifyPassword(inputPassword, storedHash) {
@@ -159,8 +304,10 @@ exports.getUserById = asyncHandler(async (req, res) => {
 			responseData: user,
 		});
 	} else {
-		res.status(404);
-		throw new Error('User not found');
+		res.status(404).json({
+			responseCode: "22",
+			responseMessage: 'User not found',
+		});
 	}
 });
 
@@ -173,26 +320,14 @@ exports.updateUser = asyncHandler(async (req, res) => {
 
 	const user = await User.findById(id);
 	if (user) {
-		if (userData.name) user.name = userData.name;
-		if (userData.gender) user.gender = userData.gender;
-		if (userData.country) user.country = userData.country;
-		if (userData.address) user.address = userData.address;
-		if (userData.role) user.role = userData.role;
-		if (userData.department) user.department = userData.department;
-		if (userData.position) user.position = userData.position;
-		if (userData.phone) user.phone = userData.phone;
-		if (userData.email) user.email = userData.email;
-		if (userData.password) {
-			const salt = await bcrypt.genSalt(10);
-			user.password = await bcrypt.hash(userData.password, salt);
-		}
+		const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
-		const updatedUser = await user.save();
-		res.status(200).json({
+		res.json({
 			responseCode: "00",
-			responseMessage: 'Completed successfully',
-			responseData: updatedUser,
+			responseMessage: "Completed Successfully",
+			responseData: updatedUser
 		});
+
 	} else {
 		res.status(404);
 		throw new Error('User not found');
@@ -259,14 +394,58 @@ exports.updateUserProfile = asyncHandler(async (req, res) => {
 // @access  Private
 exports.deleteUserProfile = asyncHandler(async (req, res) => {
 	try {
+		const userId = req.params.id;
 		// Find and delete user
 		const deletedUser = await User.findByIdAndDelete(req.user.id);
-		if (!deletedUser) {
-			return res.status(404).json({ success: false, error: 'User not found' });
+		if (!mongoose.Types.ObjectId.isValid(userId)){
+			return res.status(400).json({
+				responseCode: "22",
+				responseMessage: "Invalid user ID",
+			});
+		}
+
+		const user = await User.findById(userId);
+
+		if (!user) {
+			return res.status(404).json({
+				responseCode: "22",
+				responseMessage: "User not found",
+			});
 		}
 
 		// Send response
-		res.status(200).json({ success: true, message: 'User deleted successfully' });
+		// Prevent deleting superadmin or your own account (optional)
+		if (user.role === 'superadmin') {
+			return res.status(403).json({
+				responseCode: "22",
+				responseMessage: "Cannot delete a superadmin user",
+			});
+		}
+
+		if (user._id.toString() === req.user._id.toString()) {
+			return res.status(403).json({
+				responseCode: "22",
+				responseMessage: "You cannot delete your own account",
+			});
+		}
+
+		// Perform soft delete
+		user.deleted = true;
+		user.deletedAt = Date.now();
+		await user.save();
+		await logAction({
+			userId: req.user._id,
+			action: 'delete_user',
+			module: 'User Management',
+			details: `User ${user.email} deleted by ${req.user.email}`,
+			ipAddress: req.ip,
+		});
+
+		res.status(200).json({
+			responseCode: "00",
+			responseMessage: "User deleted successfully",
+		});
+
 	} catch (error) {
 		logger.error('Error deleting user profile:', error.message);
 		res.status(500).json({ success: false, error: 'Server Error' });

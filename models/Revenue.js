@@ -68,7 +68,17 @@ const InvoiceSchema = new Schema({
 	bankName: { type: String },
 	currency: { type: String, default: "NGN" },
 	taxDetailsName: { type: String },
-	taxDetailsVatNumber: { type: String }
+	taxDetailsVatNumber: { type: String },
+	createdBy: {
+		type: String,
+		required: [true, 'Client Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 }, { timestamps: true });
 
 const Invoice = mongoose.model('Invoice', InvoiceSchema);

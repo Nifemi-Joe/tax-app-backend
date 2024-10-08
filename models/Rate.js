@@ -16,7 +16,17 @@ const rateSchema = new mongoose.Schema({
 	createdAt: {
 		type: Date,
 		default: Date.now,
-	}
+	},
+	createdBy: {
+		type: String,
+		required: [true, 'Rate Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 });
 
 module.exports = mongoose.model('Rate', rateSchema);

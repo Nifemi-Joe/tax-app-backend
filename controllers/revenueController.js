@@ -10,6 +10,8 @@ const { Schema } = mongoose;
 const asyncHandler = require('express-async-handler');
 const ejs = require("ejs");
 const htmlPdf = require("html-pdf-node");
+const User = require("../models/User");
+const logAction = require("../utils/auditLogger");
 
 // Utility function to generate a random number with a specific prefix
 const generateRandomNumberWithPrefix = (prefix) => {
@@ -154,6 +156,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		responseMessage: "Invoice created successfully",
 		responseData: savedInvoice
 	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
 });
 
 // @route   PUT /api/revenue/updateInvoice/:id
@@ -183,6 +187,9 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			responseMessage: "Invoice updated successfully",
 			responseData: updatedInvoice
 		});
+		const existingClient = await Client.findById(updatedInvoice.clientId);
+		const user = await User.findById(req.user._id,); // Assuming you have a User model
+		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
 	} catch (error) {
 		console.error(error); // Log the specific error
 		res.status(500).json({ success: false, error: 'Internal server error' });
@@ -306,6 +313,9 @@ exports.softDelete = asyncHandler(async (req, res) => {
 		responseCode: "00",
 		responseMessage: "Revenue and associated taxes deleted successfully"
 	});
+	const existingClient = await Client.findById(revenue.clientId);
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'deleted_invoice', "Revenue Management", `Deleted invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
 });
 
 

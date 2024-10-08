@@ -1,3 +1,5 @@
+// middlewares/errorMiddleware.js
+
 const mongoose = require('mongoose');
 const { ValidationError } = require('express-validator');
 
@@ -21,43 +23,59 @@ const errorHandler = (err, req, res, next) => {
 		message = err.errors.map(error => error.msg).join(', ');
 	}
 
+	// Handle CastError separately
+	if (err.name === 'CastError') {
+		statusCode = 400;
+		message = `Invalid ${err.path}: ${err.value}`;
+	}
+
 	// Custom error handling
 	if (err.isCustomError) {
 		statusCode = err.statusCode;
 		message = err.message;
 	}
+	if (err.name === 'JsonWebTokenError') {
+		message = 'Not authorized, token failed';
+	}
+
+	if (err.name === 'TokenExpiredError') {
+		message = 'Not authorized, token expired';
+	}
+
+	// Prevent sending headers if response is already sent
+	if (res.headersSent) {
+		return next(err);
+	}
 
 	// Response
 	res.status(statusCode).json({
-		success: false,
-		message,
+		responseCode: statusCode === 200 ? "00" : "22",
+		responseMessage: message,
 		stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
 	});
 };
 
 // Middleware to handle 404 errors
 const notFound = (req, res, next) => {
-	res.status(404).json({ success: false, message: 'Resource not found' });
+	res.status(404).json({ responseCode: "22", responseMessage: 'Resource not found' });
 };
 
-// Middleware to handle uncaught exceptions and promise rejections
-const uncaughtExceptions = (err, req, res, next) => {
-	console.error('Uncaught Exception:', err.message);
-	res.status(500).json({ success: false, message: 'Something went wrong' });
+// Middleware to validate ObjectId
+const validateObjectId = (paramName) => {
+	return (req, res, next) => {
+		const id = req.params[paramName];
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({
+				responseCode: "22",
+				responseMessage: `Invalid ID`,
+			});
+		}
+		next();
+	};
 };
-
-// Middleware to handle unhandled promise rejections
-const unhandledRejections = (reason, promise) => {
-	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-	process.exit(1); // Exit the process to avoid running with a broken state
-};
-
-process.on('uncaughtException', uncaughtExceptions);
-process.on('unhandledRejection', unhandledRejections);
 
 module.exports = {
 	errorHandler,
 	notFound,
-	uncaughtExceptions,
-	unhandledRejections
+	validateObjectId
 };

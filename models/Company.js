@@ -23,6 +23,16 @@ const companySchema = new Schema({
 		type: Date,
 		default: Date.now,
 	},
+	createdBy: {
+		type: String,
+		required: [true, 'Company Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 });
 
 // Middleware to update `updatedAt` before saving

@@ -1,66 +1,92 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const asyncHandler = require('express-async-handler');
-const { logger } = require('../utils/logger');
+// middleware/authMiddleware.js
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-// Middleware to protect routes
+const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
+
 const protect = asyncHandler(async (req, res, next) => {
 	let token;
 
-	// Check for token in headers
-	if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+	if (
+		req.headers.authorization &&
+		req.headers.authorization.startsWith('Bearer')
+	) {
 		try {
-			// Extract token from Bearer
 			token = req.headers.authorization.split(' ')[1];
 
-			// Verify token
-			const decoded = jwt.verify(token, JWT_SECRET);
+			const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-			// Get user from token
 			req.user = await User.findById(decoded.id).select('-password');
+			if (!req.user) {
+				res.status(401).json({
+					responseCode: "22",
+					responseMessage: "Not authorized, user not found"
+				});
+				throw new Error('Not authorized, user not found');
+			}
 
-			// Proceed to next middleware or route handler
 			next();
 		} catch (error) {
-			res.status(401).json({ success: false, message: 'Not authorized, token failed' });
+			console.error(error);
+			res.status(401).json({
+				responseCode: "22",
+				responseMessage: "Not authorized, user not found"
+			});
+			throw new Error('Not authorized, token failed');
 		}
-	} else {
-		res.status(401).json({ success: false, message: 'Not authorized, no token' });
+	}
+
+	if (!token) {
+		res.status(401).json({
+			responseCode: "22",
+			responseMessage: "Not authorized, user not found"
+		});
+		throw new Error('Not authorized, no token');
 	}
 });
 
-const authenticateToken = (req, res, next) => {
-	const token = req.headers.authorization?.split(' ')[1]; // Assuming Bearer token
-
-	if (!token) {
-		return res.status(401).json({ success: false, error: 'Access token is required' });
-	}
-
-	jwt.verify(token, JWT_SECRET, (err, user) => {
-		if (err) {
-			logger.error('JWT verification error:', err.message);
-			return res.status(403).json({ success: false, error: 'Invalid or expired token' });
-		}
-
-		req.user = user;
-		next();
-	});
-};
-
-
-// Middleware to allow only specific roles
-const restrictTo = (...roles) => {
+// Authorization based on roles
+const authorize = (...roles) => {
 	return (req, res, next) => {
 		if (!roles.includes(req.user.role)) {
-			return res.status(403).json({ success: false, message: 'Access denied' });
+			res.status(403).json({
+				responseCode: "22",
+				responseMessage: "Not authorized, user not found"
+			});;
+			throw new Error('User role not authorized for this action');
 		}
 		next();
 	};
 };
 
-module.exports = {
-	protect,
-	restrictTo,
-	authenticateToken
+// middlewares/authorizePermissions.js
+
+const authorizePermissions = (...requiredPermissions) => {
+	return (req, res, next) => {
+		if (!req.user) {
+			res.status(401).json({ responseCode: "22", responseMessage: 'Not authorized, no user' });
+			throw new Error('Not authorized, no user');
+		}
+
+		// Allow admins and superadmins to bypass permission checks
+		const userRole = req.user.role;
+		if (userRole === 'admin' || userRole === 'superadmin') {
+			return next();
+		}
+
+		// Check if user has all required permissions
+		const userPermissions = req.user.permissions;
+		const hasPermissions = requiredPermissions.every(permission => userPermissions.includes(permission));
+
+		if (!hasPermissions) {
+			res.status(403).json({ responseCode: "22", responseMessage: 'Forbidden: You do not have the required permissions' });
+			throw new Error('Forbidden: You do not have the required permissions');
+		}
+
+		next();
+	};
 };
+
+
+
+module.exports = { protect, authorize, authorizePermissions };
