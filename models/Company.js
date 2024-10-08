@@ -3,15 +3,16 @@ const { Schema } = mongoose;
 
 // Define Company Schema
 const companySchema = new Schema({
-	name: {
-		type: String,
-		required: true,
-	},
-	admin: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: 'User', // Reference to the admin user
-		required: true,
-	},
+	name: { type: String, required: true },
+	adminId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+	clients: [{ type: mongoose.Schema.Types.ObjectId, ref: "Client" }],
+	taxes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tax" }],
+	employees: [{ type: mongoose.Schema.Types.ObjectId, ref: "Employee" }],
+	revenue: [{ type: mongoose.Schema.Types.ObjectId, ref: "Revenue" }],
+	rate: [{ type: mongoose.Schema.Types.ObjectId, ref: "Rate" }],
+	expense: [{ type: mongoose.Schema.Types.ObjectId, ref: "Expense" }],
+	vat: [{ type: mongoose.Schema.Types.ObjectId, ref: "VAT" }],
+	service: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
 	address: String,
 	contactNumber: String,
 	companyEmail: String,

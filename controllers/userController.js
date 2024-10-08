@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Company = require("../models/Company");
 const { validationResult } = require('express-validator');
 const asyncHandler = require('express-async-handler');
 const { logger } = require('../utils/logger');
@@ -41,6 +42,12 @@ exports.userRegister = asyncHandler(async (req, res) => {
 			responseData: user,
 			token: generateToken(user._id)
 		});
+		// Automatically create a company for the user
+		const company = await Company.create({ name: `${req.body.companyName}`, adminId: user._id });
+		user.companyId = company._id;
+		await user.save();
+
+
 		const users = await User.findById(req.user._id,); // Assuming you have a User model
 		await logAction(req.user._id || "System", users.name || users.firstname + " " + users.lastname, 'registered_user', "User Management", `Registered user ${user.name || user.firstname + " " + user.lastname}  by ${users.email  || "System"}`, req.body.ip );
 	} else {
