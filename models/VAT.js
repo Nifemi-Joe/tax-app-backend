@@ -19,6 +19,16 @@ const vatSchema = new Schema(
 			type: String,
 			default: '',
 		},
+		createdBy: {
+			type: String,
+			required: [true, 'Vat Created By is required'],
+		},
+		updatedBy: {
+			type: String,
+		},
+		deletedBy: {
+			type: String,
+		},
 	},
 	{ timestamps: true }
 );

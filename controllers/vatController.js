@@ -207,3 +207,18 @@ exports.getAllVATS = asyncHandler(async (req, res) => {
 		res.status(400).json({ responseCode: "22", responseMessage: 'Issue fetching VAT rates' });
 	}
 });
+exports.deleteVAT = asyncHandler(async (req, res) => {
+	const vat = await VAT.findById(req.params.id);
+
+	if (!vat) {
+		return res.status(404).json({ responseCode: "22", responseMessage: 'VAT rate not found' });
+	}
+
+	vat.deleted = true;
+	vat.deletedAt = new Date();
+
+	await vat.save();
+
+	res.status(200).json({ responseCode: "00", responseMessage: 'VAT rate marked as deleted', responseData: vat });
+});
+

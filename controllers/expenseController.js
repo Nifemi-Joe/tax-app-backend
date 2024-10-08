@@ -1,6 +1,8 @@
 const Expense = require('../models/Expense');
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
+const User = require("../models/User");
+const logAction = require("../utils/auditLogger");
 
 // @desc    Create a new expense
 // @route   POST /api/expenses
@@ -32,6 +34,8 @@ exports.createExpense = asyncHandler(async (req, res) => {
 				responseMessage: "Invalid expense data"
 			})
 	}
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id || expense.createdBy, user.name || user.firstname + " " + user.lastname, 'created_expense', "Expense Management", `Created expense ${expense.description} by ${user.email}`, req.body.ip );
 });
 
 // @desc    Update an existing expense
@@ -52,7 +56,13 @@ exports.updateExpense = asyncHandler(async (req, res) => {
 		runValidators: true,
 	});
 
-	res.status(200).json(updatedExpense);
+	res.status(200).json({
+		responseCode: "00",
+		responseMessage: "Employee soft deleted successfully!",
+		responseData: updatedExpense
+	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id || expense.updatedBy, user.name || user.firstname + " " + user.lastname, 'updated_expense', "Expense Management", `Updated expense ${expense.description} by ${user.email}`, req.body.ip );
 });
 
 // @desc    Print an expense
@@ -157,4 +167,24 @@ exports.disburseExpense = asyncHandler(async (req, res) => {
 	await expense.save();
 
 	res.status(200).json({ message: 'Expense disbursed successfully', expense });
+});
+
+exports.softDeleteExpense = asyncHandler(async (req, res) => {
+	const expense = await Expense.findById(req.params.id);
+
+	if (!expense) {
+		return res.status(404).json({ message: 'Expense not found' });
+	}
+
+	expense.status = 'deleted'; // Mark the expense as deleted
+	await expense.save();
+
+	res.status(200).json({
+		responseCode: "00",
+		responseMessage: 'Expense deleted successfully',
+		responseData: expense
+	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id || expense.deletedBy, user.name || user.firstname + " " + user.lastname, 'deleted_expense', "Expense Management", `Deleted expense ${expense.description} by ${user.email}`, req.body.ip );
+
 });

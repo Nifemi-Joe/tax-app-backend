@@ -1,6 +1,8 @@
 const Rate = require('../models/Rate');
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
+const User = require("../models/User");
+const logAction = require("../utils/auditLogger");
 
 // @desc    Create a new rate
 // @route   POST /api/rates
@@ -32,6 +34,8 @@ exports.createRate = asyncHandler(async (req, res) => {
 			responseMessage: "Invalid rate data",
 		});
 	}
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_rate', "Rate Management", `Created rate ${newRate.value} by ${user.email}`, req.body.ip );
 });
 
 // @desc    Update existing rate
@@ -60,6 +64,8 @@ exports.updateRate = asyncHandler(async (req, res) => {
 		responseMessage: "Rate updated successfully",
 		responseData: updatedRate
 	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_rate', "Rate Management", `Updated rate ${updatedRate.value} by ${user.email}`, req.body.ip );
 });
 
 // @desc    Get the current rate
@@ -122,6 +128,8 @@ exports.softDeleteRate = asyncHandler(async (req, res) => {
 		responseCode: "00",
 		responseMessage: "Rate deleted successfully",
 	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'deleted_rate', "Rate Management", `Deleted rate ${rate.value} by ${user.email}`, req.body.ip );
 });
 
 // @desc    Get all active rates

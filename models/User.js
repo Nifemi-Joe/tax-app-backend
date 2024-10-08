@@ -4,11 +4,26 @@ const jwt = require('jsonwebtoken');
 
 // User Schema
 const userSchema = new mongoose.Schema({
+	firstname: {
+		type: String,
+		required: [true, 'First name is required'],
+		trim: true,
+		maxlength: [50, 'First name cannot be more than 50 characters']
+	},
+	lastname: {
+		type: String,
+		required: [true, 'Last name is required'],
+		trim: true,
+		maxlength: [50, 'Last name cannot be more than 50 characters']
+	},
 	name: {
 		type: String,
-		required: [true, 'Name is required'],
 		trim: true,
-		maxlength: [50, 'Name cannot be more than 50 characters']
+	},
+	middlename: {
+		type: String,
+		trim: true,
+		maxlength: [50, 'Middle name cannot be more than 50 characters']
 	},
 	email: {
 		type: String,
@@ -40,8 +55,45 @@ const userSchema = new mongoose.Schema({
 	address: {
 		type: String
 	},
-	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
-	role: { type: String, enum: ['admin', 'employee'], default: 'employee' }, // Role-based access
+	salary: {
+		type: Number,
+	},
+	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }, // Belongs to a company
+	role: {
+		type: String,
+		enum: ['superadmin', 'admin', 'clientAdmin', 'employee'],
+		default: 'employee'
+	},
+	permissions: [{
+		type: String,
+		enum: [
+			'create-client',
+			'view-client',
+			'create-employee',
+			'view-employee',
+			'create-expense',
+			'view-expense',
+			'create-invoice',
+			'view-invoice',
+			'create-service',
+			'view-service',
+			'view-tax',
+			'view-vat',
+			'create-vat',
+
+			// Add all other permissions here
+		]
+	}],
+	createdBy: {
+		type: String,
+		required: [true, 'User Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 	firstLogin: { type: Boolean, default: true }, // Force password change on first login
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,

@@ -29,6 +29,16 @@ const clientSchema = new Schema({
 		required: [true, 'Client phone number is required'],
 		trim: true,
 	},
+	createdBy: {
+		type: String,
+		required: [true, 'Client Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	address: {
 		type: String,

@@ -42,7 +42,17 @@ const expenseSchema = new mongoose.Schema({
 		type: String,
 		trim: true,
 		maxlength: [100000, 'Image cannot be more than 100000 characters']
-	}
+	},
+	createdBy: {
+		type: String,
+		required: [true, 'Expense Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 }, {
 	timestamps: true
 });

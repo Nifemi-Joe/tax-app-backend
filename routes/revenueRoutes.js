@@ -11,42 +11,44 @@ const {
 	generateReceipt,
 	softDelete
 } = require('../controllers/revenueController');
+const {validateObjectId} = require('../middlewares/errorMiddleware');
+const {protect, authorize, authorizePermissions} = require("../middlewares/authMiddleware");
 
 // @desc    Create a new invoice
 // @route   POST /api/revenue/createInvoice
 // @access  Private
-router.post('/', createInvoice);
+router.post('/', protect, createInvoice);
 
 // @desc    Update an existing invoice
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
-router.put('/updateInvoice/:id', updateInvoice);
+router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('update-invoice'), validateObjectId('id'), updateInvoice);
 
 // @desc    Print an invoice as a PDF
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
-router.get('/printInvoice/:id', printInvoice);
-router.get('/downloadInvoice/:id', downloadInvoice);
+router.get('/printInvoice/:id', protect, validateObjectId('id'), printInvoice);
+router.get('/downloadInvoice/:id', protect,validateObjectId('id'), downloadInvoice);
 
 // @desc    Spool invoices based on filters
 // @route   GET /api/revenue/spoolInvoices
 // @access  Private
-router.get('/spoolInvoices', spoolInvoices);
+router.get('/spoolInvoices', protect,spoolInvoices);
 
 // @desc    Track payment status of an invoice
 // @route   GET /api/revenue/trackInvoice/:id
 // @access  Private
-router.get('/trackInvoice/:id', trackInvoice);
+router.get('/trackInvoice/:id',  protect,validateObjectId('id'), trackInvoice);
 
 // @desc    Send a payment reminder for unpaid invoices
 // @route   POST /api/revenue/sendReminder/:id
 // @access  Private
-router.post('/sendReminder/:id', sendReminder);
+router.post('/sendReminder/:id', protect, validateObjectId('id'), sendReminder);
 
 // @desc    Generate and send payment receipt for a paid invoice
 // @route   POST /api/revenue/generateReceipt/:id
 // @access  Private
-router.post('/generateReceipt/:id', generateReceipt);
-router.post('/delete/:id', softDelete);
+router.post('/generateReceipt/:id', protect ,validateObjectId('id'), generateReceipt);
+router.post('/delete/:id', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('delete-invoice'), validateObjectId('id'), softDelete);
 
 module.exports = router;

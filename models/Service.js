@@ -15,13 +15,22 @@ const serviceSchema = new mongoose.Schema({
 	},
 	price: {
 		type: Number,
-		required: [true, 'Price is required'],
 		min: [0, 'Price must be a positive number']
 	},
 	category: {
 		type: String,
 		enum: ['Consulting', 'Development', 'Design', 'Support', 'Other'],
 		default: 'Other'
+	},
+	createdBy: {
+		type: String,
+		required: [true, 'Service Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
 	},
 	duration: {
 		type: String,

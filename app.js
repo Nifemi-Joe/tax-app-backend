@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
+const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -46,6 +47,29 @@ app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/tax', require('./routes/taxRoutes'));
 app.use('/api/rate', require('./routes/rateRoutes'));
 app.use('/api/vat',  require('./routes/vatRoutes'));
+app.use('/api/audit',  require('./routes/auditLogRoutes'));
+
+// Handle 404
+app.use(notFound);
+
+// Error Handler Middleware (should be after all routes)
+app.use(errorHandler);
+
+// Handle Uncaught Exceptions
+process.on('uncaughtException', (err) => {
+	console.error('Uncaught Exception:', err.message);
+	console.error(err.stack);
+	// Optionally, perform cleanup and exit
+	process.exit(1);
+});
+
+// Handle Unhandled Promise Rejections
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+	// Optionally, perform cleanup and exit
+	process.exit(1);
+});
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

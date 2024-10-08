@@ -5,6 +5,8 @@ const { check, validationResult } = require('express-validator');
 const path = require('path');
 const Employee = require("../models/Employee");
 const Client = require("../models/Client");
+const User = require("../models/User");
+const logAction = require("../utils/auditLogger");
 
 // @desc    Get all taxes
 // @route   GET /api/taxes
@@ -84,6 +86,8 @@ exports.deleteTax = asyncHandler(async (req, res) => {
 		const deletedTax = await Tax.findByIdAndDelete(req.params.id);
 		if (!deletedTax) return res.status(404).json({ success: false, error: 'Tax not found' });
 		res.status(200).json({ success: true, data: {} });
+		const user = await User.findById(req.user._id,); // Assuming you have a User model
+		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'deleted_tax', "Tax Management", `Deleted tax by ${user.email}`, req.body.ip );
 	} catch (error) {
 		res.status(500).json({ success: false, error: 'Server Error' });
 	}

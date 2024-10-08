@@ -2,6 +2,8 @@ const Employee = require('../models/Employee');
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
+const logAction = require("../utils/auditLogger");
+const User = require("../models/User");
 
 // @desc    Create a new employee
 // @route   POST /api/employees
@@ -38,6 +40,10 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	} else {
 		res.status(400).json({ responseCode: "22", responseMessage: 'Invalid employee data' });
 	}
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+
+	await logAction(req.user._id || employee.createdBy, user.name || user.firstname + " " + user.lastname, 'created_employee', "Employee Management", `Created employee ${employee.email} by ${user.email}`, req.body.ip );
+
 });
 
 // @desc    Update employee details
@@ -63,6 +69,9 @@ exports.updateEmployee = asyncHandler(async (req, res) => {
 		responseMessagee: "Employee updated successfully!",
 		responseData: updatedEmployee
 	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id || employee.updatedBy, user.name || user.firstname + " " + user.lastname, 'updated_employee', "Employee Management", `Updated employee ${employee.email} by ${user.email}`, req.body.ip );
+
 });
 
 // @desc    Print employee details
@@ -170,3 +179,34 @@ exports.getAllEmployees = asyncHandler(async (req, res) => {
 		console.log('ISSUE')
 	}
 });
+
+// @desc    Soft delete an employee
+// @route   PUT /api/employees/:id/soft-delete
+// @access  Private
+exports.softDeleteEmployee = asyncHandler(async (req, res) => {
+	const employee = await Employee.findById(req.params.id);
+
+	if (!employee) {
+		res.status(404).json({ responseCode: "22", responseMessage: 'Employee not found' });
+		return;
+	}
+
+	if (employee.status === 'deleted') {
+		return res.status(400).json({ responseCode: "22", responseMessage: 'Employee already deleted' });
+	}
+
+	employee.status = 'deleted';
+	employee.deletedAt = Date.now();
+
+	await employee.save();
+
+	res.status(200).json({
+		responseCode: "00",
+		responseMessage: "Employee soft deleted successfully!",
+		responseData: employee
+	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	await logAction(req.user._id || employee.deletedBy, user.name || user.firstname + " " + user.lastname, 'deleted_employee', "Employee Management", `Deleted employee ${employee.email} by ${user.email}`, req.body.ip );
+
+});
+

@@ -1,7 +1,11 @@
 const Client = require('../models/Client');
+const User = require('../models/User');
+
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
+const logAction = require('../utils/auditLogger');
+const AuditLog = require('../models/AuditLog');
 
 // @desc    Create a new client
 // @route   POST /api/clients
@@ -11,6 +15,8 @@ exports.createClient = asyncHandler(async (req, res) => {
 	await check('email', 'Please include a valid email').isEmail().run(req);
 	await check('phone', 'Phone number is required').isFloat().run(req);
 	await check('address', 'Address is required').not().isEmpty().run(req);
+	await check('createdBy', 'Client created by is required').not().isEmpty().run(req);
+
 	// await check('company', 'Company Name is required').not().isEmpty().run(req);
 
 	const errors = validationResult(req);
@@ -27,27 +33,23 @@ exports.createClient = asyncHandler(async (req, res) => {
 		return;
 	}
 
-	const client = await Client.create({
-		name,
-		email,
-		phone,
-		address,
-		status,
-	});
+	const client = await Client.create(req.body);
 
 	if (client) {
+		const user = await User.findById(req.user._id,); // Assuming you have a User model
+
+		await AuditLog.create({
+			userId: user._id,
+			userName: user && user.firstname ? user.firstname + " " + user.lastname : user.name ? user.name : null,
+			action: 'create_user',
+			module: 'Client Management',
+			details: `Created client ${client.email} by ${user.email}`,
+			ipAddress: req.ip,
+		});
 		res.status(201).json({
 			responseCode: "00",
 			responseMessage: "Client created successfully",
-			responseData: {
-				_id: client._id,
-				name: client.name,
-				email: client.email,
-				phone: client.phone,
-				// company: client.company,
-				address: client.address,
-				status: client.status,
-			}
+			responseData: client
 		});
 	} else {
 		res.status(400).json(
@@ -62,6 +64,13 @@ exports.createClient = asyncHandler(async (req, res) => {
 // @route   PUT /api/clients/:id
 // @access  Private
 exports.updateClient = asyncHandler(async (req, res) => {
+	await check('updatedBy', 'Client updated by is required').not().isEmpty().run(req);
+
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		return res.status(400).json({ errors: errors.array() });
+	}
+
 	const client = await Client.findById(req.params.id);
 
 	if (!client) {
@@ -78,12 +87,15 @@ exports.updateClient = asyncHandler(async (req, res) => {
 		new: true,
 		runValidators: true,
 	});
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
 
 	res.status(200).json({
 		responseCode: "00",
 		responseMessage: "Completed successfully",
 		responseData: updatedClient
 	});
+	await logAction(user._id || updatedClient.updatedBy, user.name || user.firstname + " " + user.lastname, 'updated_client', "Client Management", `Updated client ${updatedClient.email} by ${user.email}`, req.body.ip );
+
 });
 
 // @desc    Print client details
@@ -185,11 +197,21 @@ exports.getInactiveClients = asyncHandler(async (req, res) => {
 });
 
 exports.softDelete = asyncHandler( async (req,  res) => {
+	await check('deletedBy', 'Client deleted by is required').not().isEmpty().run(req);
+
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		return res.status(400).json({ errors: errors.array() });
+	}
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
+
 	const client = await Client.findByIdAndUpdate(req.body.id, { status: 'deleted' });
 	res.status(200).json({
 		responseCode: "00",
 		responseMessage: "Client deleted successfully"
 	})
+	await logAction(req.user._id || updatedClient.updatedBy, user.name || user.firstname + " " + user.lastname, 'deleted_client', "Client Management", `Deleted client ${updatedClient.email} by ${user.email}`, req.body.ip );
+
 });
 
 

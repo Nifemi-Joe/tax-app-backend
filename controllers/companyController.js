@@ -12,7 +12,7 @@ exports.registerCompany = asyncHandler(async (req, res) => {
 	// Validate input fields
 	await check('companyName', 'Company Name is required').notEmpty().run(req);
 	await check('email', 'Please include a valid email').isEmail().run(req);
-
+	await check('createdBy', 'Company created by is required').not().isEmpty().run(req);
 	await check('adminName', 'Please include a valid admin name').notEmpty().run(req);
 	await check('password', 'Password must be at least 6 characters long').isLength({ min: 6 }).run(req);
 

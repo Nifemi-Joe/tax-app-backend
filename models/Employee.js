@@ -68,7 +68,17 @@ const employeeSchema = new Schema({
 	},
 	dateOfTermination: {
 		type: Date
-	}
+	},
+	createdBy: {
+		type: String,
+		required: [true, 'Employee Created By is required'],
+	},
+	updatedBy: {
+		type: String,
+	},
+	deletedBy: {
+		type: String,
+	},
 }, {
 	timestamps: true
 });
