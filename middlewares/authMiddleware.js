@@ -70,7 +70,7 @@ const authorizePermissions = (...requiredPermissions) => {
 
 		// Allow admins and superadmins to bypass permission checks
 		const userRole = req.user.role;
-		if (userRole === 'admin' || userRole === 'superadmin') {
+		if (userRole === 'admin' || userRole === 'superadmin' || userRole === 'clientAdmin') {
 			return next();
 		}
 
