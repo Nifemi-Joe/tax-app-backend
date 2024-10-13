@@ -24,12 +24,7 @@ exports.createVAT = asyncHandler(async (req, res) => {
 	// Check if VAT already exists with the same value
 	const vatExists = await VAT.findOne({ value });
 
-	if (vatExists) {
-		res.status(400).json({ responseCode: "22", responseMessage: 'VAT rate already exists' });
-		return;
-	}
-
-	const vat = await VAT.create({ value });
+	const vat = await VAT.create(req.body);
 
 	if (vat) {
 		res.status(201).json({
