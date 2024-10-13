@@ -35,7 +35,7 @@ router.post("/", protect, async (req, res) => {
 // Get user company (if exists)
 router.get("/read-by-id/:id", protect, async (req, res) => {
 	try {
-		const company = await Company.findOne({ adminId: req.user.id }).populate("clients taxes employees");
+		const company = await Company.findById(req.params.id).populate("clients taxes employees");
 		if (!company) {
 			return res.status(404).json({ responseCode: "00" , responseMessage: "No company found. Please create one." });
 		}
