@@ -13,6 +13,7 @@ const rateSchema = new mongoose.Schema({
 		type: String,
 		default: 'USD',
 	},
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	createdAt: {
 		type: Date,
 		default: Date.now,

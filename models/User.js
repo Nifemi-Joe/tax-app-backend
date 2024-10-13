@@ -99,7 +99,7 @@ const userSchema = new mongoose.Schema({
 		enum: ["active", "inactive", "pending", "deleted"],
 		default: "active"
 	},
-	companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company" },
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", default: null, },
 	firstLogin: { type: Boolean, default: true }, // Force password change on first login
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,

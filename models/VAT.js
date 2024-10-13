@@ -26,6 +26,7 @@ const vatSchema = new Schema(
 		updatedBy: {
 			type: String,
 		},
+		companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 		deletedBy: {
 			type: String,
 		},

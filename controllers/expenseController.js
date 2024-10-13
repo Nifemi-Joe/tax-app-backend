@@ -88,7 +88,7 @@ exports.printExpense = asyncHandler(async (req, res) => {
 // @route   GET /api/expenses
 // @access  Private
 exports.getAllExpenses = asyncHandler(async (req, res) => {
-	const expenses = await Expense.find();
+	const expenses = await Expense.find({companyId: req.user.companyId });
 
 	res.status(200).json({
 		responseCode: "00",

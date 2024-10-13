@@ -182,7 +182,7 @@ exports.markClientInactive = asyncHandler(async (req, res) => {
 // @route   GET /api/clients/active
 // @access  Private
 exports.getActiveClients = asyncHandler(async (req, res) => {
-	const clients = await Client.find({ status: 'active' });
+	const clients = await Client.find({ status: 'active', company: req.user.company._id });
 
 	res.status(200).json(clients);
 });
@@ -191,7 +191,7 @@ exports.getActiveClients = asyncHandler(async (req, res) => {
 // @route   GET /api/clients/inactive
 // @access  Private
 exports.getInactiveClients = asyncHandler(async (req, res) => {
-	const clients = await Client.find({ status: 'inactive' });
+	const clients = await Client.find({ status: 'inactive', company: req.user.company._id });
 
 	res.status(200).json(clients);
 });
@@ -219,7 +219,7 @@ exports.softDelete = asyncHandler( async (req,  res) => {
 // @route   GET /api/clients
 // @access  Private
 exports.getAllClients = asyncHandler(async (req, res) => {
-	const clients = await Client.find({ status: { $ne: 'deleted' } });
+	const clients = await Client.find({ status: { $ne: 'deleted'}, companyId: req.user.companyId  });
 	if (clients){
 		res.status(200).json({
 			responseCode: "00",

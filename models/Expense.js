@@ -13,6 +13,7 @@ const expenseSchema = new mongoose.Schema({
 		trim: true,
 		maxlength: [500, 'Description cannot be more than 500 characters']
 	},
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	amount: {
 		type: Number,
 		required: [true, 'Amount is required'],

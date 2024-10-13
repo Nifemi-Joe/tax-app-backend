@@ -73,6 +73,7 @@ const employeeSchema = new Schema({
 		type: String,
 		required: [true, 'Employee Created By is required'],
 	},
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	updatedBy: {
 		type: String,
 	},

@@ -15,6 +15,7 @@ const ServiceSchema = new Schema({
 		usd_ngn_rate: Number,
 		totalfee_ngn: Number,
 	}],
+	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	serviceTotalFeeUsd: Number,
 	serviceTotalFeeNgn: Number
 });
