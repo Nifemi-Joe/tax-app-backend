@@ -41,11 +41,7 @@ const serviceSchema = new mongoose.Schema({
 		type: Boolean,
 		default: true
 	},
-	user: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: 'User',
-		required: [true, 'User ID is required']
-	},
+	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	imageUrl: {
 		type: String,
 		trim: true,

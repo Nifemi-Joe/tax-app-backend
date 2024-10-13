@@ -169,7 +169,7 @@ exports.markVATAinactive = asyncHandler(async (req, res) => {
 // @route   GET /api/vats/active
 // @access  Private (e.g., Admin)
 exports.getActiveVATS = asyncHandler(async (req, res) => {
-	const vats = await VAT.find({ status: 'active' }).sort({ createdAt: -1 });
+	const vats = await VAT.find({ status: 'active', companyId: req.user.companyId  }).sort({ createdAt: -1 });
 
 	res.status(200).json({
 		responseCode: "00",
@@ -182,7 +182,7 @@ exports.getActiveVATS = asyncHandler(async (req, res) => {
 // @route   GET /api/vats/inactive
 // @access  Private (e.g., Admin)
 exports.getInactiveVATS = asyncHandler(async (req, res) => {
-	const vats = await VAT.find({ status: 'inactive' }).sort({ createdAt: -1 });
+	const vats = await VAT.find({ status: 'inactive', company: req.user.companyId  }).sort({ createdAt: -1 });
 
 	res.status(200).json({
 		responseCode: "00",
@@ -195,7 +195,7 @@ exports.getInactiveVATS = asyncHandler(async (req, res) => {
 // @route   GET /api/vats
 // @access  Private (e.g., Admin)
 exports.getAllVATS = asyncHandler(async (req, res) => {
-	const vats = await VAT.find().sort({ createdAt: -1 });
+	const vats = await VAT.find().sort({ createdAt: -1, company: req.user.companyId  });
 
 	if (vats) {
 		res.status(200).json({

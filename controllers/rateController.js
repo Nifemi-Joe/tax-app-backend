@@ -93,7 +93,7 @@ exports.getCurrentRate = asyncHandler(async (req, res) => {
 // @route   GET /api/rates/history
 // @access  Private
 exports.getRateHistory = asyncHandler(async (req, res) => {
-	const rateHistory = await Rate.find().sort({ createdAt: -1 });
+	const rateHistory = await Rate.find().sort({ createdAt: -1, company: req.user.companyId  });
 
 	if (!rateHistory || rateHistory.length === 0) {
 		res.status(404).json({
@@ -136,7 +136,7 @@ exports.softDeleteRate = asyncHandler(async (req, res) => {
 // @route   GET /api/rates
 // @access  Private
 exports.getAllActiveRates = asyncHandler(async (req, res) => {
-	const rates = await Rate.find({ status: { $ne: 'deleted' } });
+	const rates = await Rate.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId  });
 
 	if (!rates || rates.length === 0) {
 		res.status(404).json({

@@ -39,7 +39,7 @@ const clientSchema = new Schema({
 	deletedBy: {
 		type: String,
 	},
-	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	address: {
 		type: String,
 		trim: true,

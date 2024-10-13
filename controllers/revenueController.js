@@ -259,7 +259,7 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
 		query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
 	}
 
-	const invoices = await Revenue.find({ status: { $ne: 'deleted' } });
+	const invoices = await Revenue.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId });
 	res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices});
 });
 

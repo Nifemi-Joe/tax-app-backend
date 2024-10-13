@@ -7,6 +7,7 @@ const TaxSchema = new mongoose.Schema({
 
 	taxType: { type: String, required: true },
 	totalAmount: { type: Number, required: true },
+	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	taxRate: { type: Number, required: true },
 	taxAmountDeducted: { type: Number, required: true },
 	netAmount: { type: Number, required: true },

@@ -149,7 +149,7 @@ exports.markEmployeeInactive = asyncHandler(async (req, res) => {
 // @route   GET /api/employees/active
 // @access  Private
 exports.getActiveEmployees = asyncHandler(async (req, res) => {
-	const employees = await Employee.find({ status: 'active' });
+	const employees = await Employee.find({ status: 'active', companyId: req.user.companyId  });
 
 	res.status(200).json(employees);
 });
@@ -158,7 +158,7 @@ exports.getActiveEmployees = asyncHandler(async (req, res) => {
 // @route   GET /api/employees/inactive
 // @access  Private
 exports.getInactiveEmployees = asyncHandler(async (req, res) => {
-	const employees = await Employee.find({ status: 'inactive' });
+	const employees = await Employee.find({ status: 'inactive', company: req.user.companyId  });
 
 	res.status(200).json(employees);
 });
@@ -167,7 +167,7 @@ exports.getInactiveEmployees = asyncHandler(async (req, res) => {
 // @route   GET /api/employees
 // @access  Private
 exports.getAllEmployees = asyncHandler(async (req, res) => {
-	const employees = await Employee.find();
+	const employees = await Employee.find({company: req.user.companyId });
 	if (employees){
 		res.status(200).json({
 			responseCode: "00",

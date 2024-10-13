@@ -14,6 +14,7 @@ const companySchema = new Schema({
 	vat: [{ type: mongoose.Schema.Types.ObjectId, ref: "VAT" }],
 	service: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
 	address: String,
+	logo: String,
 	contactNumber: String,
 	companyEmail: String,
 	createdAt: {
