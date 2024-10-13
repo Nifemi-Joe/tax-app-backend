@@ -139,7 +139,7 @@ exports.getAllActiveRates = asyncHandler(async (req, res) => {
 	const rates = await Rate.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId  });
 
 	if (!rates || rates.length === 0) {
-		res.status(404).json({
+		res.status(200).json({
 			responseCode: "24",
 			responseMessage: "No active rates found",
 		});
