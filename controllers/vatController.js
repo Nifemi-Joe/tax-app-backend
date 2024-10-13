@@ -195,7 +195,7 @@ exports.getInactiveVATS = asyncHandler(async (req, res) => {
 // @route   GET /api/vats
 // @access  Private (e.g., Admin)
 exports.getAllVATS = asyncHandler(async (req, res) => {
-	const vats = await VAT.find().sort({ createdAt: -1, company: req.user.companyId  });
+	const vats = await VAT.find({ company: req.user.companyId }).sort({ createdAt: -1  });
 
 	if (vats) {
 		res.status(200).json({
@@ -204,7 +204,7 @@ exports.getAllVATS = asyncHandler(async (req, res) => {
 			responseData: vats
 		});
 	} else {
-		res.status(400).json({ responseCode: "22", responseMessage: 'Issue fetching VAT rates' });
+		res.status(200).json({ responseCode: "22", responseMessage: 'Issue fetching VAT rates' });
 	}
 });
 exports.deleteVAT = asyncHandler(async (req, res) => {
