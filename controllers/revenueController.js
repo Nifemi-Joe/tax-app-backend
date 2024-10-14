@@ -260,7 +260,12 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
 	}
 
 	const invoices = await Revenue.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId });
-	res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices});
+	if (invoices){
+		res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices});
+	}
+	else {
+		res.status(200).json({ responseCode: "22", responseMessage: "No invooices found."});
+	}
 });
 
 // @desc    Track payment status of an invoice

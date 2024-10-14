@@ -14,9 +14,14 @@ const logAction = require("../utils/auditLogger");
 exports.getAllTaxes = asyncHandler(async (req, res) => {
 	try {
 		const taxes = await Tax.find({companyId: req.user.companyId });
-		res.status(200).json({ responseCode: "00", responseMessage: "Completed successfully", responseData: taxes });
+		if (taxes){
+			res.status(200).json({ responseCode: "00", responseMessage: "Completed successfully", responseData: taxes });
+		}
+		else{
+			res.status(200).json({ responseCode: "22", responseMessage: 'No taxs found.' });
+		}
 	} catch (error) {
-		res.status(500).json({ responseCode: "22", responseMessage: 'Server Error' });
+		res.status(200).json({ responseCode: "22", responseMessage: 'No taxees found.' });
 	}
 });
 

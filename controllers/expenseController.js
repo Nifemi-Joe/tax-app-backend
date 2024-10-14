@@ -89,12 +89,20 @@ exports.printExpense = asyncHandler(async (req, res) => {
 // @access  Private
 exports.getAllExpenses = asyncHandler(async (req, res) => {
 	const expenses = await Expense.find({companyId: req.user.companyId });
+	if (expenses){
+		res.status(200).json({
+			responseCode: "00",
+			responseMessage: "Completed successfully",
+			responseData: expenses
+		});
+	}
+	else{
+		res.status(200).json({
+			responseCode: "22",
+			responseMessage: "No expense found.",
+		});
+	}
 
-	res.status(200).json({
-		responseCode: "00",
-		responseMessage: "Completed successfully",
-		responseData: expenses
-	});
 });
 
 // @desc    Spool expenses by category or date range

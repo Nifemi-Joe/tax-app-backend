@@ -292,11 +292,20 @@ exports.loginUser = asyncHandler(async (req, res) => {
 
 exports.getUsers = asyncHandler(async (req, res) => {
 	const users = await User.find();
-	res.status(200).json({
-		responseCode: "00",
-		responseMessage: 'Completed successfully',
-		responseData: users,
-	});
+	if (users){
+		res.status(200).json({
+			responseCode: "00",
+			responseMessage: 'Completed successfully',
+			responseData: users,
+		});
+	}
+	else{
+		res.status(200).json({
+			responseCode: "22",
+			responseMessage: 'No users found.',
+		});
+	}
+
 });
 
 // @desc    Get user by ID

@@ -8,5 +8,11 @@ const AuditLog = require('../models/AuditLog');
 // @access  Private/Admin
 exports.getAuditLogs = asyncHandler(async (req, res) => {
 	const logs = await AuditLog.find().sort({ timestamp: -1 });
-	res.json(logs);
+	if (logs){
+		res.status(200).json(logs)
+	}
+	else{
+		res.status(200).json({responseCde: "22", responseMessage: "No audit logs found."})
+
+	}
 });
