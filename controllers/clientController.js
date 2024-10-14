@@ -228,6 +228,9 @@ exports.getAllClients = asyncHandler(async (req, res) => {
 		});
 	}
 	else {
-		console.log('ISSUE')
+		res.status(200).json({
+			responseCode: "22",
+			responseMessage: "No clients found."
+		});
 	}
 });

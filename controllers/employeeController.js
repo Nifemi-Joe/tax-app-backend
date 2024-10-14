@@ -171,12 +171,15 @@ exports.getAllEmployees = asyncHandler(async (req, res) => {
 	if (employees){
 		res.status(200).json({
 			responseCode: "00",
-			responseMessagee: "Completed successfully!",
+			responseMessage: "Completed successfully!",
 			responseData: employees
 		});
 	}
 	else {
-		console.log('ISSUE')
+		res.status(200).json({
+			responseCode: "22",
+			responseMessage: "No employees found."
+		});
 	}
 });
 
