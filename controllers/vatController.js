@@ -9,6 +9,8 @@ const nodemailer = require('nodemailer');
 // @route   POST /api/vats
 // @access  Private (e.g., Admin)
 exports.createVAT = asyncHandler(async (req, res) => {
+	console.log(req.user)
+
 	// Validation
 	await check('value', 'VAT value is required and must be a positive number')
 		.isFloat({ min: 0 })
@@ -20,11 +22,11 @@ exports.createVAT = asyncHandler(async (req, res) => {
 	}
 
 	const { value } = req.body;
-
+	const body = req.body
 	// Check if VAT already exists with the same value
 	const vatExists = await VAT.findOne({ value });
 
-	const vat = await VAT.create(req.body);
+	const vat = await VAT.create({...body, companyId: req.user.companyId, createdBy: req.user._id});
 
 	if (vat) {
 		res.status(201).json({
@@ -190,7 +192,7 @@ exports.getInactiveVATS = asyncHandler(async (req, res) => {
 // @route   GET /api/vats
 // @access  Private (e.g., Admin)
 exports.getAllVATS = asyncHandler(async (req, res) => {
-	const vats = await VAT.find({ company: req.user.companyId }).sort({ createdAt: -1  });
+	const vats = await VAT.find({ companyId: req.user.companyId }).sort({ createdAt: -1  });
 
 	if (vats) {
 		res.status(200).json({
