@@ -29,7 +29,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		return;
 	}
 
-	const employee = await Employee.create(reqData);
+	const employee = await Employee.create({...reqData, createdBy: req.user._id, companyId: req.user.companyId});
 
 	if (employee) {
 		res.status(201).json({
