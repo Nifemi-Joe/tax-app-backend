@@ -115,6 +115,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
 	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
 	invoiceData.rateDate = transactionDate;
+	invoiceData.companyId = req.user.companyId;
+	invoiceData.createdBy = req.user._id
 
 	// Create invoice record
 	const newInvoice = new Revenue(invoiceData);
