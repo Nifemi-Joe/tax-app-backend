@@ -46,7 +46,7 @@ const InvoiceSchema = new Schema({
 	transactionDueDate: { type: Date, required: true },
 	amountPaid: { type: Number, required: true, default: 0 },
 	amountDue: { type: Number, required: true },
-	status: { type: String, enum: ['Pending', 'Paid', 'Overdue'], required: true },
+	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid'], required: true },
 	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES'], required: true },
 	companyName: { type: String, required: true },
 	service1: {
