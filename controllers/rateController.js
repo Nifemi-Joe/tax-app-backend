@@ -19,7 +19,7 @@ exports.createRate = asyncHandler(async (req, res) => {
 	const { value } = req.body;
 
 	const newRate = await Rate.create({
-		value,
+		value, createdBy: req.user._id, companyId: req.user.companyId
 	});
 
 	if (newRate) {

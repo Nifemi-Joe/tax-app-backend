@@ -54,7 +54,7 @@ exports.createTax = asyncHandler(async (req, res) => {
 		const { taxName, rate } = req.body;
 
 		// Create tax record
-		const newTax = await Tax.create({ taxName, rate });
+		const newTax = await Tax.create({ taxName, rate, createdBy: req.user._id, companyId: req.user.companyId });
 
 		res.status(201).json({ success: true, data: newTax });
 	} catch (error) {
