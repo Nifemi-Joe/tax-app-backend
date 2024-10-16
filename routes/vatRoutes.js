@@ -38,7 +38,7 @@ router.get('/active', getActiveVATS);
 router.get('/inactive', getInactiveVATS);
 
 // Get list of all VAT rates
-router.get('/read', getAllVATS);
+router.get('/read', protect,getAllVATS);
 
 router.delete('/delete/:id',  protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('delete-vat'), deleteVAT);
 

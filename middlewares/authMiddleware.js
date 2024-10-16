@@ -18,7 +18,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
 			req.user = await User.findById(decoded.id).select('-password');
 			if (!req.user) {
-				res.status(401).json({
+				res.status(200).json({
 					responseCode: "22",
 					responseMessage: "Not authorized, user not found"
 				});
@@ -28,7 +28,7 @@ const protect = asyncHandler(async (req, res, next) => {
 			next();
 		} catch (error) {
 			console.error(error);
-			res.status(401).json({
+			res.status(200).json({
 				responseCode: "22",
 				responseMessage: "Not authorized, user not found"
 			});
@@ -37,7 +37,7 @@ const protect = asyncHandler(async (req, res, next) => {
 	}
 
 	if (!token) {
-		res.status(401).json({
+		res.status(200).json({
 			responseCode: "22",
 			responseMessage: "Not authorized, user not found"
 		});
@@ -49,7 +49,7 @@ const protect = asyncHandler(async (req, res, next) => {
 const authorize = (...roles) => {
 	return (req, res, next) => {
 		if (!roles.includes(req.user.role)) {
-			res.status(403).json({
+			res.status(200).json({
 				responseCode: "22",
 				responseMessage: "Not authorized, user not found"
 			});;
@@ -64,7 +64,7 @@ const authorize = (...roles) => {
 const authorizePermissions = (...requiredPermissions) => {
 	return (req, res, next) => {
 		if (!req.user) {
-			res.status(401).json({ responseCode: "22", responseMessage: 'Not authorized, no user' });
+			res.status(200).json({ responseCode: "22", responseMessage: 'Not authorized, no user' });
 			throw new Error('Not authorized, no user');
 		}
 
@@ -79,7 +79,7 @@ const authorizePermissions = (...requiredPermissions) => {
 		const hasPermissions = requiredPermissions.every(permission => userPermissions.includes(permission));
 
 		if (!hasPermissions) {
-			res.status(403).json({ responseCode: "22", responseMessage: 'Forbidden: You do not have the required permissions' });
+			res.status(200).json({ responseCode: "22", responseMessage: 'Forbidden: You do not have the required permissions' });
 			throw new Error('Forbidden: You do not have the required permissions');
 		}
 
