@@ -115,8 +115,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
 	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
 	invoiceData.rateDate = transactionDate;
-	invoiceData.companyId = req.user.companyId;
-	invoiceData.createdBy = req.user._id
+	// invoiceData.companyId = req.user.companyId;
+	invoiceData.createdBy = req.user._id;
 
 	// Create invoice record
 	const newInvoice = new Revenue(invoiceData);
@@ -141,12 +141,13 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		clientId: savedInvoice.clientId,
 		taxType: "VAT", // Example tax type
 		totalAmount: savedInvoice.totalInvoiceFee_ngn,
-		taxRate: savedInvoice.vat,
+		taxRate: savedInvoice.vat || 7.5,
 		taxAmountDeducted: taxAmount,
-		netAmount: netAmount
+		netAmount: netAmount,
+		companyId: savedInvoice.companyId,
+		createdBy: savedInvoice.createdBy
 	});
 	await taxEntity.save();
-	console.log(taxEntity);
 	// // Render the invoice template
 	// const invoiceHTML = path.resolve(__dirname, `../templates/${invoiceType.toLowerCase()}_invoice.html`);
 	// const pdfBuffer = await generatePDF(invoiceHTML, savedInvoice);
