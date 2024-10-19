@@ -32,19 +32,19 @@ router.post('/', protect,createTax);
 // @route   PUT /api/taxes/:id
 // @desc    Update a tax record
 // @access  Private
-router.put('/update/:id', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('update-tax'),  validateObjectId('id'), updateTax);
+router.put('/update/:id', protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-tax'),  validateObjectId('id'), updateTax);
 
 // @route   DELETE /api/taxes/:id
 // @desc    Delete a tax record
 // @access  Private
-router.delete('/delete/:id', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('delete-tax'),  validateObjectId('id'),deleteTax);
+router.delete('/delete/:id', protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('delete-tax'),  validateObjectId('id'),deleteTax);
 
 // @route   POST /api/taxes/calculate
 // @desc    Calculate and apply taxes to invoices
 // @access  Private
 router.post('/calculate', protect,calculateAndApplyTaxes);
 
-router.post('/pay/:id', protect, validateObjectId('id'), payTax);
+router.post('/pay/:id', protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('pay-tax'), validateObjectId('id'), payTax);
 router.get('/summary', protect,generateTaxSummary);
 
 // @route   GET /api/taxes/report

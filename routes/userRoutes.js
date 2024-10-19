@@ -15,7 +15,7 @@ const {
 	deleteUserProfile
 } = require('../controllers/userController');
 const { check } = require('express-validator');
-const { protect, authorize } = require('../middlewares/authMiddleware');
+const { protect, authorize, authorizePermissions} = require('../middlewares/authMiddleware');
 const {validateObjectId} = require("../middlewares/errorMiddleware");
 
 
@@ -36,9 +36,10 @@ router.post(
 		check('lastname', 'Last Name is required').not().isEmpty(),
 		check('email', 'Please include a valid email').isEmail(),
 		check('password', 'Password must be 6 or more characters').isLength({ min: 6 }),
-		check('role').optional().isIn(['superadmin', 'admin', 'clientAdmin', 'employee'])
+		check('role').optional().isIn(['superadmin', 'admin', 'backOffice', 'frontOffice'])
 	],
-
+	protect,
+	authorize('superadmin', 'admin'), authorizePermissions('create-user'),
 	userRegister
 );
 

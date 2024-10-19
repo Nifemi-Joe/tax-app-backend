@@ -17,10 +17,10 @@ const {protect, authorize, authorizePermissions} = require("../middlewares/authM
 // const { protect, admin } = require('../middleware/authMiddleware'); // Assuming you have authentication middleware
 
 // Create a new VAT rate
-router.post('/', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('create-vat'), createVAT);
+router.post('/', protect,authorize('superadmin', 'admin', 'frontOffice'), authorizePermissions('create-vat'), createVAT);
 
 // Update an existing VAT rate
-router.put('/update/:id',  protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('update-vat'),updateVAT);
+router.put('/update/:id',  protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-vat'),updateVAT);
 
 // Print VAT rate details
 router.get('/:id/print', printVATDetails);
@@ -40,7 +40,7 @@ router.get('/inactive', getInactiveVATS);
 // Get list of all VAT rates
 router.get('/read', protect,getAllVATS);
 
-router.delete('/delete/:id',  protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('delete-vat'), deleteVAT);
+router.delete('/delete/:id',  protect,authorize('superadmin', 'admin'), authorizePermissions('delete-vat'), deleteVAT);
 
 
 module.exports = router;

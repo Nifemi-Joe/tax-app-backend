@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema({
 	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }, // Belongs to a company
 	role: {
 		type: String,
-		enum: ['superadmin', 'admin', 'clientAdmin', 'employee'],
+		enum: ['superadmin', 'admin', 'backOffice', 'frontOffice'],
 		default: 'employee'
 	},
 	permissions: [{

@@ -19,10 +19,10 @@ const {validateObjectId} = require('../middlewares/errorMiddleware');
 const {authorize, protect, authorizePermissions} = require("../middlewares/authMiddleware");
 
 // Route to create a new client
-router.post('/',protect, authorize('superadmin', 'admin', 'clientAdmin','employee'), authorizePermissions('create-client'), createClient);
+router.post('/',protect, authorize('superadmin', 'admin', 'frontOffice'), authorizePermissions('create-client'), createClient);
 
 // Route to update client details
-router.put('/update-client/:id',protect, authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('update-client'), validateObjectId('id'), updateClient);
+router.put('/update-client/:id',protect, authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-client'), validateObjectId('id'), updateClient);
 
 // Route to print client details
 router.get('/read-by-clients-id/:id',protect, validateObjectId('id'), printClientDetails);
@@ -41,6 +41,6 @@ router.get('/clients/inactive',protect, getInactiveClients);
 
 // Route to get a list of all clients
 router.get('/clients',protect, getAllClients);
-router.post('/delete/:id',protect,  authorize('superadmin', 'admin', 'clientAdmin'),  authorizePermissions('delete-client'), validateObjectId('id'), softDelete);
+router.post('/delete/:id',protect,  authorize('superadmin', 'admin'),  authorizePermissions('delete-client'), validateObjectId('id'), softDelete);
 
 module.exports = router;
