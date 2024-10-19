@@ -167,7 +167,7 @@ exports.getInactiveEmployees = asyncHandler(async (req, res) => {
 // @route   GET /api/employees
 // @access  Private
 exports.getAllEmployees = asyncHandler(async (req, res) => {
-	const employees = await Employee.find({company: req.user.companyId });
+	const employees = await Employee.find({companyId: req.user.companyId });
 	if (employees){
 		res.status(200).json({
 			responseCode: "00",
