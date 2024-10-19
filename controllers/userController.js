@@ -51,7 +51,10 @@ exports.userRegister = asyncHandler(async (req, res) => {
 		const users = await User.findById(req.user._id,); // Assuming you have a User model
 		await logAction(req.user._id || "System", users.name || users.firstname + " " + users.lastname, 'registered_user', "User Management", `Registered user ${user.name || user.firstname + " " + user.lastname}  by ${users.email  || "System"}`, req.body.ip );
 	} else {
-		res.status(400);
+		res.status(400).json({
+			responseCode: "22",
+			responseMessage: "Unable to create user at this time.",
+		});
 		throw new Error('Invalid user data');
 	}
 });

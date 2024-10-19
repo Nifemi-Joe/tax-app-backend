@@ -17,10 +17,10 @@ const {validateObjectId} = require('../middlewares/errorMiddleware');
 const {authorize, authorizePermissions, protect} = require("../middlewares/authMiddleware");
 
 // Route to create a new expense
-router.post('/create', protect, createExpense);
+router.post('/create', protect, authorize('superadmin', 'admin', 'frontOffice'), authorizePermissions('create-expense'), createExpense);
 
 // Route to update an existing expense
-router.put('/update/:id', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('update-expense'),validateObjectId('id'), updateExpense);
+router.put('/update/:id', protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-expense'),validateObjectId('id'), updateExpense);
 
 // Route to print an expense
 router.get('/read-by-id/:id', protect,validateObjectId('id'), printExpense);
@@ -37,6 +37,6 @@ router.get('/track/:id', protect,validateObjectId('id'), trackExpense);
 // Route to disburse or claim an expense
 router.put('/disburse/:id', protect,validateObjectId('id'), disburseExpense);
 
-router.delete('/delete/:id', protect,authorize('superadmin', 'admin', 'clientAdmin'), authorizePermissions('delete-expense'),validateObjectId('id'), softDeleteExpense);
+router.delete('/delete/:id', protect,authorize('superadmin', 'admin'), authorizePermissions('delete-expense'),validateObjectId('id'), softDeleteExpense);
 
 module.exports = router;
