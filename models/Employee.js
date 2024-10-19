@@ -58,7 +58,7 @@ const employeeSchema = new Schema({
 	},
 	status: {
 		type: String,
-		enum: ['active', 'inactive', 'retired', 'resigned', 'terminated'],
+		enum: ['active', 'inactive', 'retired', 'resigned', 'terminated', 'deleted'],
 		default: 'active'
 	},
 	dateOfJoining: {
