@@ -17,12 +17,12 @@ const {protect, authorize, authorizePermissions} = require("../middlewares/authM
 // @desc    Create a new invoice
 // @route   POST /api/revenue/createInvoice
 // @access  Private
-router.post('/', protect,authorize('superadmin', 'admin', 'frontOffice'), authorizePermissions('create-invoice'), createInvoice);
+router.post('/', protect,authorize('superadmin', 'admin', 'frontOffice'), createInvoice);
 
 // @desc    Update an existing invoice
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
-router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-invoice'), validateObjectId('id'), updateInvoice);
+router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'backOffice'), validateObjectId('id'), updateInvoice);
 
 // @desc    Print an invoice as a PDF
 // @route   GET /api/revenue/printInvoice/:id
@@ -49,6 +49,6 @@ router.post('/sendReminder/:id', protect, validateObjectId('id'), sendReminder);
 // @route   POST /api/revenue/generateReceipt/:id
 // @access  Private
 router.post('/generateReceipt/:id', protect ,validateObjectId('id'), generateReceipt);
-router.post('/delete/:id', protect,authorize('superadmin', 'admin'), authorizePermissions('delete-invoice'), validateObjectId('id'), softDelete);
+router.post('/delete/:id', protect,authorize('superadmin', 'admin'), validateObjectId('id'), softDelete);
 
 module.exports = router;
