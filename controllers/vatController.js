@@ -192,6 +192,7 @@ exports.getInactiveVATS = asyncHandler(async (req, res) => {
 // @route   GET /api/vats
 // @access  Private (e.g., Admin)
 exports.getAllVATS = asyncHandler(async (req, res) => {
+
 	const vats = await VAT.find({ companyId: req.user.companyId }).sort({ createdAt: -1  });
 
 	if (vats) {

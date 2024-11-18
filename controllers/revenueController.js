@@ -261,8 +261,15 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
 	if (startDate && endDate) {
 		query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
 	}
+	let invoices;
+	if (req.user.role === "admin" || req.user.role === "superadmin") {
+		invoices = await Revenue.find({status: {$ne: 'deleted'}});
 
-	const invoices = await Revenue.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId });
+	}
+	else {
+		invoices = await Revenue.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId });
+
+	}
 	if (invoices){
 		res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices});
 	}
