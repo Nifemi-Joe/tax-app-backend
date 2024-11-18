@@ -18,10 +18,10 @@ const {validateObjectId} = require('../middlewares/errorMiddleware');
 const {authorize, authorizePermissions, protect} = require("../middlewares/authMiddleware");
 
 // Route to create a new employee
-router.post('/create', protect, authorize('superadmin', 'admin', 'frontOffice'), authorizePermissions('create-employee'),createEmployee);
+router.post('/create', protect, authorize('superadmin', 'admin', 'frontOffice'),createEmployee);
 
 // Route to update employee details
-router.put('/update/:id', protect,authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-employee'),  validateObjectId('id'), updateEmployee);
+router.put('/update/:id', protect,authorize('superadmin', 'admin', 'backOffice'),  validateObjectId('id'), updateEmployee);
 
 // Route to print employee details
 router.get('/read-by-id/:id/', protect,validateObjectId('id'), printEmployeeDetails);
@@ -42,6 +42,6 @@ router.get('/read/inactive', protect,getInactiveEmployees);
 router.get('/read', protect,getAllEmployees);
 
 
-router.delete('/delete/:id', protect,authorize('superadmin', 'admin'), authorizePermissions('delete-employee'),  validateObjectId('id'), softDeleteEmployee);
+router.delete('/delete/:id', protect,authorize('superadmin', 'admin'),  validateObjectId('id'), softDeleteEmployee);
 
 module.exports = router;

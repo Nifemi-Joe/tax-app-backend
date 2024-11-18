@@ -39,7 +39,7 @@ router.post(
 		check('role').optional().isIn(['superadmin', 'admin', 'backOffice', 'frontOffice'])
 	],
 	protect,
-	authorize('superadmin', 'admin'), authorizePermissions('create-user'),
+	authorize('superadmin', 'admin'),
 	userRegister
 );
 
@@ -64,7 +64,7 @@ router.get('/profile', protect, getProfileUser);
 // @access  Private
 // router.get('/profile', getUserProfile);
 
-router.get('/read', protect, authorize('superadmin', 'admin'),getUsers);
+router.get('/read', protect,getUsers);
 router.post(
 	'/reset-password',
 	protect,

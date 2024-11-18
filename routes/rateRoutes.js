@@ -19,7 +19,7 @@ router.post('/create', protect, authorize('superadmin', 'admin', 'frontOffice'),
 // @route   PUT /api/rates/:id
 // @desc    Update existing rate
 // @access  Private
-router.put('/update/:id', protect, authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-rate'), validateObjectId('id') , updateRate);
+router.put('/update/:id', protect, authorize('superadmin', 'admin', 'backOffice'), validateObjectId('id') , updateRate);
 
 // @route   GET /api/rates/current
 // @desc    Get the current/latest rate
@@ -34,7 +34,7 @@ router.get('/history', protect,getRateHistory);
 // @route   PUT /api/rates/:id/delete
 // @desc    Soft delete a rate
 // @access  Private
-router.put('/delete/:id', protect,authorize('superadmin', 'admin'), authorizePermissions('delete-rate'),  validateObjectId('id'), softDeleteRate);
+router.put('/delete/:id', protect,authorize('superadmin', 'admin'),  validateObjectId('id'), softDeleteRate);
 
 // @route   GET /api/rates
 // @desc    Get all active rates (not deleted)
