@@ -19,10 +19,10 @@ const {validateObjectId} = require('../middlewares/errorMiddleware');
 const {authorize, protect, authorizePermissions} = require("../middlewares/authMiddleware");
 
 // Route to create a new client
-router.post('/',protect, authorize('superadmin', 'admin', 'frontOffice'), authorizePermissions('create-client'), createClient);
+router.post('/',protect, authorize('superadmin', 'admin', 'frontOffice'), createClient);
 
 // Route to update client details
-router.put('/update-client/:id',protect, authorize('superadmin', 'admin', 'backOffice'), authorizePermissions('update-client'), validateObjectId('id'), updateClient);
+router.put('/update-client/:id',protect, authorize('superadmin', 'admin', 'backOffice'), validateObjectId('id'), updateClient);
 
 // Route to print client details
 router.get('/read-by-clients-id/:id',protect, validateObjectId('id'), printClientDetails);
