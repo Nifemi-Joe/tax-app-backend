@@ -28,13 +28,12 @@ const employeeSchema = new Schema({
 		required: true,
 		unique: true,
 		trim: true,
-		lowercase: true,
-
+		lowercase: true
 	},
 	phoneNumber: {
 		type: String,
 		required: true,
-		trim: true,
+		trim: true
 	},
 	address: {
 		type: String,
@@ -71,26 +70,34 @@ const employeeSchema = new Schema({
 	},
 	createdBy: {
 		type: String,
-		required: [true, 'Employee Created By is required'],
+		required: [true, 'Employee Created By is required']
 	},
 	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }, // Belongs to a company
 	updatedBy: {
-		type: String,
+		type: String
 	},
 	deletedBy: {
-		type: String,
-	},
+		type: String
+	}
 }, {
 	timestamps: true
 });
 
+// Middleware to format salary to two decimal places before saving
+employeeSchema.pre('save', function (next) {
+	if (this.salary !== undefined) {
+		this.salary = Number(this.salary.toFixed(2));
+	}
+	next();
+});
+
 // Static method to find active employees
-employeeSchema.statics.findActiveEmployees = function() {
+employeeSchema.statics.findActiveEmployees = function () {
 	return this.find({ status: 'active' });
 };
 
 // Instance method to update status
-employeeSchema.methods.updateStatus = function(status) {
+employeeSchema.methods.updateStatus = function (status) {
 	this.status = status;
 	return this.save();
 };

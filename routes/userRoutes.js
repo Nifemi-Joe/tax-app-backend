@@ -5,6 +5,7 @@ const {
 	authUser,
 	getProfileUser,
 	resetUserPassword,
+	adminResetUserPassword,
 	registerUser,
 	loginUser,
 	getUserProfile,
@@ -73,6 +74,13 @@ router.post(
 		check('newPassword', 'New password must be 6 or more characters').isLength({ min: 6 })
 	],
 	resetUserPassword
+);
+
+router.post(
+	'/admin/reset-password',
+	protect,
+	authorize('superadmin', 'admin'),
+	adminResetUserPassword
 );
 
 router.get('/read-by-id/:id', protect,  validateObjectId('id'),getUserById);

@@ -219,7 +219,7 @@ exports.softDelete = asyncHandler( async (req,  res) => {
 // @route   GET /api/clients
 // @access  Private
 exports.getAllClients = asyncHandler(async (req, res) => {
-	const clients = await Client.find({ status: { $ne: 'deleted'}, companyId: req.user.companyId  });
+	const clients = await Client.find({ status: { $ne: 'deleted'} });
 	if (clients){
 		res.status(200).json({
 			responseCode: "00",

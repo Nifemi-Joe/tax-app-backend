@@ -9,21 +9,51 @@ const ServiceSchema = new Schema({
 	transactions: [{
 		id: String,
 		description: String,
-		volume: Number,
-		unitfee_usd: Number,
-		totalfee_usd: Number,
-		usd_ngn_rate: Number,
-		totalfee_ngn: Number,
+		volume: {
+			type: Number,
+			set: (value) => parseFloat(value.toFixed(2)) // Ensure volume is fixed to 2 decimal places
+		},
+		unitfee_usd: {
+			type: Number,
+			set: (value) => parseFloat(value.toFixed(2)) // Ensure unitfee_usd is fixed to 2 decimal places
+		},
+		totalfee_usd: {
+			type: Number,
+			set: (value) => parseFloat(value.toFixed(2)) // Ensure totalfee_usd is fixed to 2 decimal places
+		},
+		usd_ngn_rate: {
+			type: Number,
+			set: (value) => parseFloat(value.toFixed(2)) // Ensure usd_ngn_rate is fixed to 2 decimal places
+		},
+		totalfee_ngn: {
+			type: Number,
+			set: (value) => parseFloat(value.toFixed(2)) // Ensure totalfee_ngn is fixed to 2 decimal places
+		},
 	}],
-	serviceTotalFeeUsd: Number,
-	serviceTotalFeeNgn: Number
+	serviceTotalFeeUsd: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure serviceTotalFeeUsd is fixed to 2 decimal places
+	},
+	serviceTotalFeeNgn: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure serviceTotalFeeNgn is fixed to 2 decimal places
+	}
 });
 
 // Role Schema for OUTSOURCING invoices
 const RoleSchema = new Schema({
-	count: Number,
-	unit_fee: Number,
-	total_fee: Number,
+	count: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure count is fixed to 2 decimal places
+	},
+	unit_fee: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure unit_fee is fixed to 2 decimal places
+	},
+	total_fee: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure total_fee is fixed to 2 decimal places
+	},
 	name: String
 });
 
@@ -32,9 +62,18 @@ const OtherInvoiceServiceSchema = new Schema({
 	serviceid: String,
 	servicename: String,
 	servicedescription: String,
-	trans_Count: Number,
-	unit_Fee: Number,
-	total_fee: Number
+	trans_Count: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure trans_Count is fixed to 2 decimal places
+	},
+	unit_Fee: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure unit_Fee is fixed to 2 decimal places
+	},
+	total_fee: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure total_fee is fixed to 2 decimal places
+	}
 });
 
 const InvoiceSchema = new Schema({
@@ -43,8 +82,17 @@ const InvoiceSchema = new Schema({
 	clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
 	transactionDate: { type: Date, required: true },
 	transactionDueDate: { type: Date, required: true },
-	amountPaid: { type: Number, required: true, default: 0 },
-	amountDue: { type: Number, required: true },
+	amountPaid: {
+		type: Number,
+		required: true,
+		default: 0,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure amountPaid is fixed to 2 decimal places
+	},
+	amountDue: {
+		type: Number,
+		required: true,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure amountDue is fixed to 2 decimal places
+	},
 	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid'], required: true },
 	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES'], required: true },
 	companyName: { type: String, required: true },
@@ -57,11 +105,26 @@ const InvoiceSchema = new Schema({
 	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	roles: [RoleSchema],
 	service2: ServiceSchema,
-	totalInvoiceFee_usd: { type: Number },
-	totalInvoiceFee_ngn: { type: Number },
-	vat: { type: Number },
-	totalInvoiceFeePlusVat_usd: { type: Number },
-	totalInvoiceFeePlusVat_ngn: { type: Number },
+	totalInvoiceFee_usd: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFee_usd is fixed to 2 decimal places
+	},
+	totalInvoiceFee_ngn: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFee_ngn is fixed to 2 decimal places
+	},
+	vat: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure vat is fixed to 2 decimal places
+	},
+	totalInvoiceFeePlusVat_usd: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFeePlusVat_usd is fixed to 2 decimal places
+	},
+	totalInvoiceFeePlusVat_ngn: {
+		type: Number,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFeePlusVat_ngn is fixed to 2 decimal places
+	},
 	rateDate: { type: Date },
 	accountName: { type: String },
 	accountNumber: { type: String },

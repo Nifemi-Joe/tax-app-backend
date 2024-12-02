@@ -1,4 +1,4 @@
-const User = require('../models/User');
+ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Company = require("../models/Company");
@@ -90,8 +90,10 @@ exports.authUser = asyncHandler(async (req, res) => {
 		// const users = await User.findById(req.user._id,); // Assuming you have a User model
 		await logAction(user._id, user.name ? user.name : user.firstname + " " + user.lastname, 'logged_in_user', "User Management", `User ${user.name ? user.name : user.firstname + " " + user.lastname} logged in`, req.body.ip );
 	} else {
-		res.status(401);
-		throw new Error('Invalid email or password');
+		res.status(202).json({
+			responseCode: "22",
+			responseMessage: "Invalid email or password",
+		});
 	}
 });
 
@@ -131,6 +133,31 @@ exports.resetUserPassword = asyncHandler(async (req, res) => {
 
 	res.json({ message: 'Password reset successfully' });
 });
+
+ exports.adminResetUserPassword = async (req, res) => {
+	 const { userId } = req.body;
+	 if (!userId) return res.status(400).json({ message: "User ID is required." });
+
+	 try {
+		 const user = await User.findById(userId);
+		 if (!user) return res.status(404).json({ message: "User not found." });
+
+		 // Generate a random password
+		 const randomPassword = Math.random().toString(36).slice(-8);
+
+		 // Hash the password
+		 const hashedPassword = await bcrypt.hash(randomPassword, 10);
+		 user.password = hashedPassword;
+		 await user.save();
+
+		 // Send the new password to the user's email
+		 await sendEmail(user.email, "Password Reset", `Your new password is: ${randomPassword}`);
+
+		 res.status(200).json({ message: "Password reset successfully and sent to the user." });
+	 } catch (error) {
+		 res.status(500).json({ message: "Error resetting password." });
+	 }
+ };
 
 // @desc    Update user
 // @route   PUT /api/users/:id

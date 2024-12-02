@@ -1,5 +1,3 @@
-// models/VAT.js
-
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
@@ -9,6 +7,7 @@ const vatSchema = new Schema(
 			type: Number,
 			required: [true, 'VAT value is required'],
 			min: [0, 'VAT value cannot be negative'],
+			set: (value) => parseFloat(value.toFixed(2)), // Ensure the VAT value is rounded to 2 decimal places
 		},
 		status: {
 			type: String,
