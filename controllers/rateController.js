@@ -136,7 +136,7 @@ exports.softDeleteRate = asyncHandler(async (req, res) => {
 // @route   GET /api/rates
 // @access  Private
 exports.getAllActiveRates = asyncHandler(async (req, res) => {
-	const rates = await Rate.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId  });
+	const rates = await Rate.find({ status: { $ne: 'deleted' } });
 
 	if (!rates || rates.length === 0) {
 		res.status(200).json({

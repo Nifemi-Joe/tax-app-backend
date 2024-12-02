@@ -17,12 +17,12 @@ const clientSchema = new Schema({
 		unique: true,
 		lowercase: true,
 		validate: {
-			validator: function(v) {
+			validator: function (v) {
 				// Regular expression for email validation
 				return /^([\w-]+(?:\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7})$/.test(v);
 			},
-			message: props => `${props.value} is not a valid email address!`
-		}
+			message: props => `${props.value} is not a valid email address!`,
+		},
 	},
 	phone: {
 		type: String,
@@ -47,21 +47,21 @@ const clientSchema = new Schema({
 	},
 	clientTotalInvoice: {
 		type: Number,
-		default: 0
+		default: 0,
 	},
 	clientAmountDue: {
 		type: Number,
-		default: 0
+		default: 0,
 	},
 	clientAmountPaid: {
 		type: Number,
-		default: 0
+		default: 0,
 	},
 	clientInvoices: {
-		type: Array
+		type: Array,
 	},
 	clientProducts: {
-		type: Array
+		type: Array,
 	},
 	createdAt: {
 		type: Date,
@@ -74,14 +74,23 @@ const clientSchema = new Schema({
 	status: {
 		type: String,
 		enum: ['active', 'pending', 'deleted', 'inactive'],
-		default: "active"
-	}
+		default: 'active',
+	},
 });
 
-// Middleware to update 'updatedAt' field before saving
-clientSchema.pre('save', function(next) {
+// Middleware to format numbers to two decimal places before saving
+clientSchema.pre('save', function (next) {
 	if (this.isModified()) {
-		this.updatedAt = Date.now();
+		if (this.clientTotalInvoice !== undefined) {
+			this.clientTotalInvoice = Number(this.clientTotalInvoice.toFixed(2));
+		}
+		if (this.clientAmountDue !== undefined) {
+			this.clientAmountDue = Number(this.clientAmountDue.toFixed(2));
+		}
+		if (this.clientAmountPaid !== undefined) {
+			this.clientAmountPaid = Number(this.clientAmountPaid.toFixed(2));
+		}
+		this.updatedAt = Date.now(); // Update the 'updatedAt' timestamp
 	}
 	next();
 });

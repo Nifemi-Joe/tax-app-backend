@@ -13,7 +13,7 @@ const logAction = require("../utils/auditLogger");
 // @access  Private
 exports.getAllTaxes = asyncHandler(async (req, res) => {
 	try {
-		const taxes = await Tax.find({companyId: req.user.companyId });
+		const taxes = await Tax.find({});
 		if (taxes){
 			res.status(200).json({ responseCode: "00", responseMessage: "Completed successfully", responseData: taxes });
 		}

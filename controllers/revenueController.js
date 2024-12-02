@@ -267,7 +267,7 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
 
 	}
 	else {
-		invoices = await Revenue.find({ status: { $ne: 'deleted' }, companyId: req.user.companyId });
+		invoices = await Revenue.find({ status: { $ne: 'deleted' } });
 
 	}
 	if (invoices){
