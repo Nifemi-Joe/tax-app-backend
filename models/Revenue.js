@@ -82,6 +82,7 @@ const InvoiceSchema = new Schema({
 	clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
 	transactionDate: { type: Date, required: true },
 	transactionDueDate: { type: Date, required: true },
+	amountInWords: String,
 	amountPaid: {
 		type: Number,
 		required: true,
@@ -101,8 +102,6 @@ const InvoiceSchema = new Schema({
 		required: [true, 'Service1 is required'],
 		default: {}
 	},
-
-	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	roles: [RoleSchema],
 	service2: ServiceSchema,
 	totalInvoiceFee_usd: {

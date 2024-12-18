@@ -3,37 +3,402 @@
 <head>
     <meta charset="UTF-8">
     <title>Invoice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="root">
-    <div style="opacity: 1; will-change: auto;">
+    <div>
         <div class="w-3/5 pt-6 pb-16 px-3 mt-3 rounded second-font border border-slate-200">
+            <!-- Header Section -->
             <div class="sc-exkVDC fXoaNB">
                 <div class="sc-iMDhdf bJgzxY">
-                    <img src="data:image/jpeg;base64,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"
-                         alt="logo" class="w-1/3">
+                    <img src="data:image/jpeg;base64,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" alt="Company Logo" class="h-12">
+                    <span>RC: 918111</span>
                 </div>
-                <p class="w-full font-semibold text-sm uppercase pt-3">Invoice
-                    Summary</p>
-            </div>
-            <div class="sc-hUHlUy hReJNC">
-                <p class="sc-ikZGxK hjVIfx">Company Name: <span
-                        class="font-semibold"><%= invoice.companyName %></span></p>
-                <p class="sc-ikZGxK hjVIfx">Invoice Date: <span
-                        class="font-semibold"><%= invoice.invoiceDate %></span></p>
-                <p class="sc-ikZGxK hjVIfx">Invoice Ref No: <span
-                        class="font-semibold"><%= invoice.invoiceRefNo %></span></p>
-                <p class="sc-ikZGxK hjVIfx">Payment Due Date: <span
-                        class="font-semibold"><%= invoice.paymentDueDate %></span></p>
-                <p class="sc-ikZGxK hjVIfx">Period Month: <span
-                        class="font-semibold"><%= invoice.periodMonth %></span></p>
-                <p class="sc-ikZGxK hjVIfx">Period Year: <span
-                        class="font-semibold"><%= invoice.periodYear %></span></p>
+                <div class="sc-loAbOW jnwEuy">
+                    <span class="sc-bPZXsP iWNPPN second-font-bold">Global SJX Limited</span>
+                    <span class="sc-eteQWc gfjeES">Block 3 Plot 57b, Fatai Arobieke Street, Lekki Phase I, Lagos.</span>
+                    <span class="sc-bPZXsP iWNPPN">Email: <span class="sc-eteQWc gfjeES">talk2us@globalsjxltd.com</span></span>
+                    <span class="sc-bPZXsP iWNPPN">Website: <span class="sc-eteQWc gfjeES">www.globalsjxltd.com</span></span>
+                </div>
             </div>
 
-            <!-- Include other sections similarly -->
+            <!-- Invoice Title -->
+            <div class="sc-gkavYR kuLkzR">AUTHENTICATION TRANSACTIONS INVOICE</div>
+
+            <!-- Transaction Details -->
+            <div class="sc-krqSwS hgeqOK">
+                 <span class="flex flex-column"><span>
+                    <span class="font-bold">Issue Date:</span> <%= new Date(data.transactionDate).toLocaleDateString('en-GB') %></span>
+                    <span><span class="font-bold">Invoice Ref:</span> <%= data.invoiceNo %></span>
+                </span>
+                <span><span class="font-bold">Due Date: </span> <%= new Date(data.transactionDate).toLocaleDateString('en-GB') %></span>
+            </div>
+
+            <!-- Service Tables -->
+            <% [data.service1, data.service2].forEach((service, index) => { %>
+            <div class="w-full border border-slate-200 mt-4">
+                <table class="w-full table">
+                    <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Volume</th>
+                        <th class="text-center">Unit Fee (<%= data.currency %>)</th>
+                        <th class="text-center">Total Fee (<%= data.currency %>)</th>
+                        <% if (data.currency !== 'NGN') { %>
+                        <th class="text-center">Total Fee (NGN)</th>
+                        <% } %>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% service.transactions.forEach(transaction => { %>
+                    <tr>
+                        <td><%= transaction.description %></td>
+                        <td><%= transaction.volume %></td>
+                        <td class="text-center"><%= transaction.unitfee_usd %></td>
+                        <td class="text-center"><%= transaction.totalfee_usd %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                        <td class="text-center"><%= transaction.totalfee_ngn %></td>
+                        <% } %>
+                    </tr>
+                    <% }) %>
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <td colspan="3" class="font-bold italic">Sub-Total - <%= index === 0 ? 'A' : 'B' %></td>
+                        <td class="font-bold italic"><%= service.serviceTotalFeeUsd %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                        <td class="font-bold italic"><%= service.serviceTotalFeeNgn %></td>
+                        <% } %>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <% }) %>
+
+            <!-- Total and VAT Section -->
+            <table class="w-full table-1 mt-2">
+                <tbody>
+                <tr>
+                    <td colspan="4" class="font-bold">TOTAL FEE (A+B)</td>
+                    <td class="font-bold text-right"><%= data.totalInvoiceFee_usd %></td>
+                    <% if (data.currency !== 'NGN') { %>
+                    <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn %></td>
+                    <% } %>
+                </tr>
+                <tr>
+                    <td colspan="4" class="font-bold">VAT</td>
+                    <td class="font-bold text-right"><%= data.vat %></td>
+                    <% if (data.currency !== 'NGN') { %>
+                    <td class="font-bold text-right"><%= data.totalInvoiceFeePlusVat_ngn %></td>
+                    <% } %>
+                </tr>
+                </tbody>
+                <tfoot>
+                <% if (data.currency !== 'NGN') { %>
+                <tr>
+                    <td colspan="4" class="font-bold">GRAND TOTAL in NGN</td>
+                    <td class="font-bold text-right"></td>
+                    <td class="font-bold text-right"><%= data.grandTotal_ngn %></td>
+                </tr>
+                <% } %>
+                <tr>
+                    <td colspan="4" class="font-bold">GRAND TOTAL in <%= data.currency %></td>
+                    <td class="font-bold text-right"><%= data.totalInvoiceFeePlusVat_ngn %></td>
+                    <td class="font-bold text-right"></td>
+                </tr>
+                </tfoot>
+            </table>
+            <div class="px-2 py-2 font-black border-slate-200 border-b bb-border second-font-bold">AMOUNT IN WORDS:
+                <span class="italic font-normal second-font"><%= data.amountInWords %></span>
+            </div>
+            <div class="px-2 py-2 font-black border-slate-200 border-b second-font-bold">INSTRUCTION:
+                <div class="italic font-normal flex gap-4 items-baseline second-font">
+                    <span>i.</span>
+                    <span> Kindly credit our NGN account with details below with the NGN value above.</span>
+                </div>
+                <div class="italic font-normal flex gap-4 items-baseline second-font">
+                    <span>ii.</span>
+                    <span>Please debit our account for the WHT and remit accordingly using the Tax details below.</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 </body>
 </html>
+
+<style>
+
+    /* Custom styling */
+    table {
+        border-spacing: 0;
+    }
+    .table thead {
+        border: none !important;
+    }
+
+    .table th {
+        height: 50px;
+    }
+
+    .table th:first-child {
+        padding-left: 24px;
+        text-align: left;
+    }
+
+    .table td {
+        text-align: right;
+        border-bottom: 1px solid #EFF0F4;
+    }
+
+    .table th {
+        font-family: 'Outfit', "Lora", sans-serif !important;
+        border-right: 1px solid #EFF0F4;
+        border-bottom: 1px solid #EFF0F4;
+        font-weight: 700;
+    }
+
+    .table th:last-child, .table td:last-child {
+        border-right: none;
+    }
+
+    .table td:first-child {
+        text-align: left;
+        padding-left: 24px;
+        width: 40%;
+    }
+
+    .table-1 td {
+        width: 15.5%;
+    }
+
+    .table-1 td:last-child {
+        width: 16%;
+    }
+
+    .table-1 td:first-child {
+        padding-left: 24px;
+        width: 60%;
+        font-weight: 900;
+    }
+
+    .table-1 tr {
+        border-top: 1px solid #EFF0F4;
+    }
+
+    .table-1 td {
+        font-family: 'CustomFontBold', "Lora", sans-serif !important;
+        padding-right: 8px;
+    }
+
+    @media print {
+        body {
+            width: 610mm;
+            margin: 0;
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        table th, table td {
+            word-wrap: break-word;
+            padding: 8px;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+    }
+
+    .second-font {
+        font-family: 'CustomFont', "Lora", 'Poppins', 'sans-serif' !important;
+    }
+
+    .second-font-bold {
+        font-family: 'CustomFontBold', "Lora", 'Poppins', 'sans-serif' !important;
+    }
+    .pt-6 {
+        padding-top: 1.5rem;
+    }
+    .pb-16 {
+        padding-bottom: 4rem;
+    }
+    .px-3 {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    .border-slate-200 {
+        --tw-border-opacity: 1;
+        border-color: rgb(226 232 240 / 1);
+    }
+    .border {
+        border-width: 1px;
+    }
+    .rounded {
+        border-radius: 0.25rem;
+    }
+    .w-3\/5 {
+        width: 40%;
+    }
+    .mt-3 {
+        margin-top: 0.75rem;
+    }
+    /*.mx-auto {*/
+    /*    margin-left: auto;*/
+    /*    margin-right: auto;*/
+    /*}*/
+    .rounded {
+        border-radius: 0.375rem !important;
+    }
+    .px-3 {
+        padding-right: 1rem !important;
+        padding-left: 1rem !important;
+    }
+    .mt-3 {
+        margin-top: 1rem !important;
+    }
+    .mx-auto {
+        margin-right: auto !important;
+        margin-left: auto !important;
+    }
+    .border {
+        border: 1px solid #dee2e6 !important;
+    }
+    .fXoaNB {
+        display: flex;
+        justify-content: space-between;
+    }
+    .kuLkzR {
+        border: 2px solid rgb(255, 255, 255);
+        border-radius: 8px;
+        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+        background: rgb(187, 187, 187);
+        width: fit-content;
+        margin: 24px auto 0 auto;
+        font-family: 'CustomFontBold', 'Poppins', 'sans-serif' !important;
+        padding: 16px 32px;
+        font-weight: 900;
+        font-size: 16px;
+    }
+    .bJgzxY {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+    .bJgzxY span {
+        color: black;
+    }
+    .jnwEuy {
+        display: flex;
+        flex-direction: column;
+    }
+    .iWNPPN {
+        color: rgb(214, 171, 252);
+        font-size: 18px;
+        font-weight: 900;
+        font-style: italic;
+    }
+    .gfjeES {
+        color: black;
+        font-size: 14px;
+        font-style: italic;
+        font-weight: 400;
+    }
+    .hgeqOK {
+        display: flex;
+        width: 60%;
+        padding-top: 24px;
+        margin: 0 auto;
+        justify-content: space-between;
+    }
+    .flex {
+        display: flex;
+    }
+    .flex-column {
+        flex-direction: column !important;
+    }
+    .font-bold {
+        font-weight: 700;
+    }
+    .w-full {
+        width: 100%;
+    }
+    .mt-4 {
+        margin-top: 1rem;
+    }
+    .mt-4 {
+        margin-top: 1.5rem !important;
+    }
+    .dmkool {
+        background: rgb(187, 187, 187);
+        font-weight: 900;
+        font-size: 16px;
+        padding: 8px 16px;
+        font-family: 'CustomFontBold', 'Poppins', 'sans-serif' !important;
+    }
+    .capitalize {
+        text-transform: capitalize;
+    }
+    .italic {
+        font-style: italic;
+    }
+    .mt-2{
+        margin-top: 16px;
+    }
+    .table thead {
+        border: none !important;
+    }
+    .table>thead {
+        vertical-align: bottom;
+    }
+    thead {
+        background: #F7F8FA !important;
+        border: 1px solid #EFF0F4 !important;
+        border-radius: 8px !important;
+    }
+    table tfoot td{
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        font-family: 'CustomFontBold', 'Poppins', 'sans-serif' !important;
+    }
+    .text-right{
+        text-align: right;
+    }
+    .font-black {
+        font-weight: 900;
+    }
+    .py-2 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    .px-2 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .border-slate-200 {
+        --tw-border-opacity: 1;
+        border-color: rgb(226 232 240 / var(--tw-border-opacity));
+    }
+    .border-b {
+        border-bottom-width: 1px;
+    }
+    .py-2 {
+        padding-top: .5rem !important;
+        padding-bottom: .5rem !important;
+    }
+    .px-2 {
+        padding-right: .5rem !important;
+        padding-left: .5rem !important;}
+    .font-normal {
+        font-weight: 400;
+    }
+    .bb-border{
+      border-bottom: 1px solid #EFF0F4;
+    }
+</style>

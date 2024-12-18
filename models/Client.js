@@ -14,7 +14,6 @@ const clientSchema = new Schema({
 		type: String,
 		required: [true, 'Client email is required'],
 		trim: true,
-		unique: true,
 		lowercase: true,
 		validate: {
 			validator: function (v) {
@@ -39,7 +38,6 @@ const clientSchema = new Schema({
 	deletedBy: {
 		type: String,
 	},
-	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	address: {
 		type: String,
 		trim: true,
@@ -74,7 +72,7 @@ const clientSchema = new Schema({
 	status: {
 		type: String,
 		enum: ['active', 'pending', 'deleted', 'inactive'],
-		default: 'active',
+		default: 'pending',
 	},
 });
 

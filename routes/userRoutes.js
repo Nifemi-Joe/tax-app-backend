@@ -6,15 +6,12 @@ const {
 	getProfileUser,
 	resetUserPassword,
 	adminResetUserPassword,
-	registerUser,
-	loginUser,
-	getUserProfile,
-	updateUserProfile,
 	getUsers,
 	getUserById,
 	updateUser,
 	deleteUserProfile
 } = require('../controllers/userController');
+// const {createEmployee} = require("../controllers/employeeController")
 const { check } = require('express-validator');
 const { protect, authorize, authorizePermissions} = require('../middlewares/authMiddleware');
 const {validateObjectId} = require("../middlewares/errorMiddleware");

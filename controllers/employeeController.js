@@ -4,15 +4,20 @@ const { check, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
 const logAction = require("../utils/auditLogger");
 const User = require("../models/User");
+const sendEmail = require("../utils/emailService");
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+
 
 // @desc    Create a new employee
 // @route   POST /api/employees
 // @access  Private
 exports.createEmployee = asyncHandler(async (req, res) => {
-	await check('firstname', 'Firstname is required').not().isEmpty().run(req);
-	await check('surname', 'Surname is required').not().isEmpty().run(req);
-	await check('email', 'Please include a valid email').isEmail().run(req);
-	await check('position', 'Position is required').not().isEmpty().run(req);
+	// Validation
+	await check('firstname', 'Firstname is required').notEmpty().run(req);
+	await check('surname', 'Surname is required').notEmpty().run(req);
+	await check('email', 'A valid email is required').isEmail().run(req);
+	await check('position', 'Position is required').notEmpty().run(req);
 	await check('salary', 'Salary must be a positive number').isFloat({ min: 0 }).run(req);
 
 	const errors = validationResult(req);
@@ -20,32 +25,204 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		return res.status(400).json({ errors: errors.array() });
 	}
 
-	const reqData = req.body;
-	const email = reqData.email;
-	const employeeExists = await Employee.findOne({ email });
+	const { firstname, surname, email, position, salary, phoneNumber, role, department } = req.body;
+	const user = await User.findById(req.user._id); // Get the user who created the client
 
-	if (employeeExists) {
-		res.status(400).json({ responseCode: "22", responseMessage: 'Employee already exists' });
-		return;
+	// Check if employee already exists
+	const existingUser = await User.findOne({ email });
+	const existingEmployee = await Employee.findOne({ email });
+	console.log(existingUser);
+	console.log(existingEmployee)
+	// Generate random password
+	const randomPassword = crypto.randomBytes(8).toString('hex');
+	const hashedPassword = await bcrypt.hash(randomPassword, 10);
+	if (existingUser && existingEmployee) {
+		console.log("this worked so should end")
+		res.status(400).json({responseMessage: "User with this email already exists", responseCode: "22"});
+		return
 	}
-
-	const employee = await Employee.create({...reqData, createdBy: req.user._id, companyId: req.user.companyId});
-
-	if (employee) {
-		res.status(201).json({
-			responseCode: "00",
-			responseMessagee: "Employee added successfully!",
-			responseData: employee
+	if (existingUser && !existingEmployee) {
+		const newemployee = await Employee.create({
+			userId: user._id,
+			position,
+			salary,
+			phoneNumber: phoneNumber,
+			firstname,
+			surname,
+			department,
+			email,
+			password: randomPassword,
+			createdBy: req.user._id,
 		});
-	} else {
-		res.status(400).json({ responseCode: "22", responseMessage: 'Invalid employee data' });
+		const emailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+      <title>Welcome to GSJX LTD</title>
+      <style>
+        body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; }
+        .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+        .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1>Welcome to GSJX LTD</h1>
+        </div>
+        <div class="content">
+          <p>Dear ${firstname} ${surname},</p>
+          <p>Your account has been created successfully! Below are your login details:</p>
+          <p>Email: ${email}</p>
+          <p>Password: ${randomPassword}</p>
+          <p>Please log in and change your password.</p>
+          <p>Best Regards,<br>GSJX LTD Team</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+		await sendEmail(email, 'Welcome to GSJX LTD', emailContent);
+		const frontOfficeContent = `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		  <meta charset="UTF-8">
+		  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+		  <title>Employee Creation Notification</title>
+		  <style>
+		    body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; }
+		    .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+		    .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+		    .content { padding: 20px; }
+		  </style>
+		</head>
+		<body>
+		  <div class="email-container">
+		    <div class="header">
+		      <h1>Employee Created Successfully</h1>
+		    </div>
+		    <div class="content">
+		      <p>Dear ${user.name || user.firstname || "User"},</p>
+		      <p>The employee <strong>${firstname + " " + surname}</strong> has been successfully created in the system.</p>
+            	<p>If you did not request this change, please contact our support team immediately.</p>
+		      <p>Best Regards,<br>GSJX LTD Team</p>
+		    </div>
+		  </div>
+		</body>
+		</html>
+	`
+		const admins = await User.find({ role: { $in: ['admin', "superadmin"] } });
+		console.log(admins)
+		admins.forEach(async (admin) => {
+			await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
+		})
+		res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
 	}
-	const user = await User.findById(req.user._id,); // Assuming you have a User model
 
-	await logAction(req.user._id || employee.createdBy, user.name || user.firstname + " " + user.lastname, 'created_employee', "Employee Management", `Created employee ${employee.email} by ${user.email}`, req.body.ip );
+	const newuser = await User.create({
+		firstname,
+		lastname: surname,
+		email,
+		department,
+		position,
+		salary,
+		phoneNumber: phoneNumber,
+		createdBy: req.user._id,
+		password: randomPassword,
+		role: role,
+	});
 
+	const newemployee = await Employee.create({
+		userId: user._id,
+		position,
+		salary,
+		phoneNumber: phoneNumber,
+		firstname,
+		surname,
+		department,
+		email,
+		password: randomPassword,
+		createdBy: req.user._id,
+	});
+
+
+	// Send email to the employee
+	const emailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+      <title>Welcome to GSJX LTD</title>
+      <style>
+        body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; }
+        .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+        .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1>Welcome to GSJX LTD</h1>
+        </div>
+        <div class="content">
+          <p>Dear ${firstname} ${surname},</p>
+          <p>Your account has been created successfully! Below are your login details:</p>
+          <p>Email: ${email}</p>
+          <p>Password: ${randomPassword}</p>
+          <p>Please log in and change your password.</p>
+          <p>Best Regards,<br>GSJX LTD Team</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+	await sendEmail(email, 'Welcome to GSJX LTD', emailContent);
+	const frontOfficeContent = `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		  <meta charset="UTF-8">
+		  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+		  <title>Employee Creation Notification</title>
+		  <style>
+		    body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; }
+		    .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+		    .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+		    .content { padding: 20px; }
+		  </style>
+		</head>
+		<body>
+		  <div class="email-container">
+		    <div class="header">
+		      <h1>Employee Created Successfully</h1>
+		    </div>
+		    <div class="content">
+		      <p>Dear ${user.name || user.firstname || "User"},</p>
+		      <p>The employee <strong>${firstname + " " + surname}</strong> has been successfully created in the system.</p>
+            	<p>If you did not request this change, please contact our support team immediately.</p>
+		      <p>Best Regards,<br>GSJX LTD Team</p>
+		    </div>
+		  </div>
+		</body>
+		</html>
+	`
+	const admins = await User.find({ role: { $in: ['admin', "superadmin"] } });
+	console.log(admins)
+	admins.forEach(async (admin) => {
+		await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
+	})
+	res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: employee, responseCode: "00" });
 });
-
 // @desc    Update employee details
 // @route   PUT /api/employees/:id
 // @access  Private

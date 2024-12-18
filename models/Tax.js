@@ -10,7 +10,6 @@ const TaxSchema = new mongoose.Schema({
 		required: true,
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalAmount is fixed to 2 decimal places
 	},
-	companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	taxRate: {
 		type: Number,
 		required: true,

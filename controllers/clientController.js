@@ -6,61 +6,216 @@ const { check, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
 const logAction = require('../utils/auditLogger');
 const AuditLog = require('../models/AuditLog');
+const sendEmail = require("../utils/emailService");
 
 // @desc    Create a new client
 // @route   POST /api/clients
 // @access  Private
 exports.createClient = asyncHandler(async (req, res) => {
+	// Validate inputs
 	await check('name', 'Name is required').not().isEmpty().run(req);
 	await check('email', 'Please include a valid email').isEmail().run(req);
 	await check('phone', 'Phone number is required').isFloat().run(req);
 	await check('address', 'Address is required').not().isEmpty().run(req);
 	await check('createdBy', 'Client created by is required').not().isEmpty().run(req);
-
-	// await check('company', 'Company Name is required').not().isEmpty().run(req);
-
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
 		return res.status(400).json({ errors: errors.array() });
 	}
 
-	const { name, email, phone, address, status = 'active' } = req.body;
+	const { name, email, phone, address, createdBy, status = 'inactive' } = req.body;
 
-	const clientExists = await Client.findOne({ email });
-
+	// Check if client already exists
+	const clientExists = await Client.findOne({ email, status: { $ne: 'deleted' } });
 	if (clientExists) {
-		res.status(400).json({ message: 'Client already exists' });
-		return;
+		return res.status(400).json({ message: 'Client already exists' });
 	}
 
+	// Create the client
 	const client = await Client.create(req.body);
 
 	if (client) {
-		const user = await User.findById(req.user._id,); // Assuming you have a User model
+		const user = await User.findById(req.user._id); // Get the user who created the client
 
+		// Log the action in audit logs
 		await AuditLog.create({
 			userId: user._id,
-			userName: user && user.firstname ? user.firstname + " " + user.lastname : user.name ? user.name : null,
+			userName: user.firstname ? user.firstname + " " + user.lastname : user.name,
 			action: 'create_user',
 			module: 'Client Management',
 			details: `Created client ${client.email} by ${user.email}`,
 			ipAddress: req.ip,
 		});
+
+		// Send email to the front office user
+		const emailFrontOfficeContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+          <title>Client Creation Notification</title>
+          <style>
+            body {
+              font-family: "Outfit", sans-serif  !important;
+              background-color: #f9f9f9;
+              color: #333;
+              margin: 0;
+              padding: 0;
+            }
+            .email-container {
+              max-width: 600px;
+              margin: 20px auto;
+              background: #fff;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              text-align: center;
+              background-color: #964FFE;
+              color: #fff;
+              padding: 10px 0;
+              border-radius: 8px 8px 0 0;
+            }
+            .content {
+              padding: 20px;
+              line-height: 1.6;
+            }
+            .footer {
+              text-align: center;
+              font-size: 12px;
+              color: #888;
+              margin-top: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-container">
+            <div class="header">
+              <h1>Client Creation Notification</h1>
+            </div>
+            <div class="content">
+              <p>Dear ${user.name || user.firstname || "User"},</p>
+              <p>You have successfully created a new client. The back office team will activate this client soon.</p>
+              <p>Client Details:</p>
+              <ul>
+                <li><strong>Name:</strong> ${client.name}</li>
+                <li><strong>Email:</strong> ${client.email}</li>
+                <li><strong>Phone:</strong> ${client.phone}</li>
+                <li><strong>Address:</strong> ${client.address}</li>
+              </ul>
+              <p>If you did not initiate this action, please contact our support team immediately.</p>
+            </div>
+            <div class="footer">
+              <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+        `;
+
+		// Send email to admins and back office
+		const admins = await User.find({ role: { $in: ['admin', 'back_office', "superadmin"] } });
+		console.log(admins)
+		admins.forEach(async (admin) => {
+			console.log("i am here")
+			const emailAdminContent = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+              <title>Client Creation Notification</title>
+              <style>
+                body {
+                  font-family: "Outfit", sans-serif !important;
+                  background-color: #f9f9f9;
+                  color: #333;
+                  margin: 0;
+                  padding: 0;
+                }
+                .email-container {
+                  max-width: 600px;
+                  margin: 20px auto;
+                  background: #fff;
+                  padding: 20px;
+                  border-radius: 8px;
+                  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                }
+                .header {
+                  text-align: center;
+                  background-color: #964FFE;
+                  color: #fff;
+                  padding: 10px 0;
+                  border-radius: 8px 8px 0 0;
+                }
+                .content {
+                  padding: 20px;
+                  line-height: 1.6;
+                }
+                .footer {
+                  text-align: center;
+                  font-size: 12px;
+                  color: #888;
+                  margin-top: 20px;
+                }
+                .button {
+                  display: inline-block;
+                  padding: 10px 20px;
+                  margin: 20px auto;
+                  background-color: #964FFE;
+                  color: #fff !important;
+                  text-decoration: none;
+                  border-radius: 5px;
+                  display: block;
+    			width: max-content;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="email-container">
+                <div class="header">
+                  <h1>Client Creation Notification</h1>
+                </div>
+                <div class="content">
+                  <p>Dear Admin/Back Office,</p>
+                  <p>A new client has been created by the Front Office. Please review and activate the client by clicking the button below.</p>
+                  <p>Client Details:</p>
+                  <ul>
+                    <li><strong>Name:</strong> ${name}</li>
+                    <li><strong>Email:</strong> ${email}</li>
+                    <li><strong>Phone:</strong> ${phone}</li>
+                    <li><strong>Address:</strong> ${address}</li>
+                  </ul>
+                  <a href="${process.env.ACTIVATION_LINK}/${client._id}" class="button">Activate Client</a>
+                </div>
+                <div class="footer">
+                  <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+            </html>
+            `;
+			await sendEmail(admin.email, 'New Client Created - Activate Now', emailAdminContent);
+		});
+		await sendEmail(user.email, 'New Client Created', emailFrontOfficeContent);
+
+		// Respond back to the front-end
 		res.status(201).json({
 			responseCode: "00",
-			responseMessage: "Client created successfully",
-			responseData: client
+			responseMessage: "Client created successfully. Admins have been notified for activation.",
+			responseData: client,
 		});
 	} else {
-		res.status(400).json(
-			{
-				responseCode: "22",
-				responseMessage: "Invalid client data",
-			});
+		res.status(400).json({
+			responseCode: "22",
+			responseMessage: "Invalid client data",
+		});
 	}
-});
-
-// @desc    Update client details
+});// @desc    Update client details
 // @route   PUT /api/clients/:id
 // @access  Private
 exports.updateClient = asyncHandler(async (req, res) => {
