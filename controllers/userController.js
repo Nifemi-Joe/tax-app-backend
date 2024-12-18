@@ -234,23 +234,23 @@ exports.userRegister = asyncHandler(async (req, res) => {
 
 	 // Check if user exists
 	 const user = await User.findOne({ email });
+	 try {
+		 if (user && (await user.matchPassword(password))) {
+			 const token = generateToken(user._id);
 
-	 if (user && (await user.matchPassword(password))) {
-		 const token = generateToken(user._id);
+			 // Log user action
+			 const userName = user.name ? user.name : `${user.firstname} ${user.lastname}`;
+			 await logAction(
+				 user._id,
+				 userName,
+				 'logged_in_user',
+				 'User Management',
+				 `User ${userName} logged in`,
+				 req.body.ip
+			 );
 
-		 // Log user action
-		 const userName = user.name ? user.name : `${user.firstname} ${user.lastname}`;
-		 await logAction(
-			 user._id,
-			 userName,
-			 'logged_in_user',
-			 'User Management',
-			 `User ${userName} logged in`,
-			 req.body.ip
-		 );
-
-		 // Send welcome email
-		 const emailContent = `
+			 // Send welcome email
+			 const emailContent = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -313,15 +313,24 @@ exports.userRegister = asyncHandler(async (req, res) => {
       </body>
       </html>
     `;
-		 await sendEmail(user.email, "Welcome Back to GSJX LTD", emailContent);
-		 // Respond with success
-		 res.json({
-			 responseCode: "00",
-			 responseMessage: "Login successful",
-			 responseData: user,
-			 token,
-		 });
-	 } else {
+			 await sendEmail(user.email, "Welcome Back to GSJX LTD", emailContent);
+			 // Respond with success
+			 res.json({
+				 responseCode: "00",
+				 responseMessage: "Login successful",
+				 responseData: user,
+				 token,
+			 });
+		 }
+		 else {
+			 res.status(401).json({
+				 responseCode: "22",
+				 responseMessage: "Invalid email or password",
+			 });
+		 }
+	 }
+	 catch (e) {
+		 console.log(e)
 		 res.status(401).json({
 			 responseCode: "22",
 			 responseMessage: "Invalid email or password",
