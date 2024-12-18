@@ -7,7 +7,11 @@ const User = require("../models/User");
 const sendEmail = require("../utils/emailService");
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const jwt = require("jsonwebtoken");
 
+const generateToken = (id) => {
+	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
 
 // @desc    Create a new employee
 // @route   POST /api/employees
@@ -191,7 +195,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 			password: randomPassword,
 			role: role,
 		});
-
+		const token = generateToken(newuser._id);
 		const newemployee = await Employee.create({
 			userId: newuser._id,
 			position,
@@ -204,7 +208,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 			password: randomPassword,
 			createdBy: req.user._id,
 		});
-		const resetLink = `http://localhost:3000/create-new-password?email=${encodeURIComponent(email)}&id=${encodeURIComponent(user._id)}`;
+		const resetLink = `http://localhost:3000/create-new-password?email=${encodeURIComponent(email)}&id=${encodeURIComponent(user._id)}&token=${token}`;
 
 		// Send email to the employee
 		const emailContent = `
