@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
  */
 const sendEmail = async (to, subject, text, html , attachments = []) => {
 	const mailOptions = {
-		from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+		from: `Global SJX Ltd`,
 		to,
 		subject,
 		html: text,

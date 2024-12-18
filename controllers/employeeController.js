@@ -31,13 +31,10 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	// Check if employee already exists
 	const existingUser = await User.findOne({ email });
 	const existingEmployee = await Employee.findOne({ email });
-	console.log(existingUser);
-	console.log(existingEmployee)
 	// Generate random password
 	const randomPassword = crypto.randomBytes(8).toString('hex');
 	const hashedPassword = await bcrypt.hash(randomPassword, 10);
 	if (existingUser && existingEmployee) {
-		console.log("this worked so should end")
 		res.status(400).json({responseMessage: "User with this email already exists", responseCode: "22"});
 		return
 	}
@@ -139,7 +136,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	});
 
 	const newemployee = await Employee.create({
-		userId: user._id,
+		userId: newuser._id,
 		position,
 		salary,
 		phoneNumber: phoneNumber,
@@ -150,7 +147,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		password: randomPassword,
 		createdBy: req.user._id,
 	});
-
+	const resetLink = `http://localhost:3000/create-new-password?email=${encodeURIComponent(email)}&id=${encodeURIComponent(user._id)}`;
 
 	// Send email to the employee
 	const emailContent = `
@@ -162,10 +159,59 @@ exports.createEmployee = asyncHandler(async (req, res) => {
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
       <title>Welcome to GSJX LTD</title>
       <style>
-        body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; }
-        .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
-        .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
-        .content { padding: 20px; }
+        body {
+          font-family: 'Outfit', sans-serif;
+          background-color: #f9f9f9;
+          margin: 0;
+          padding: 0;
+          color: #333;
+        }
+        .email-container {
+          max-width: 600px;
+          margin: 20px auto;
+          background: #ffffff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          text-align: center;
+          background-color: #964FFE;
+          color: #ffffff;
+          padding: 20px;
+          border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 24px;
+        }
+        .content {
+          padding: 20px;
+          text-align: left;
+        }
+        .content p {
+          font-size: 16px;
+          margin: 10px 0;
+        }
+        .content a {
+          display: inline-block;
+          margin-top: 20px;
+          padding: 10px 15px;
+          font-size: 16px;
+          text-decoration: none;
+          color: #ffffff;
+          background-color: #964FFE;
+          border-radius: 4px;
+        }
+        .footer {
+          margin-top: 20px;
+          text-align: center;
+          font-size: 12px;
+          color: #999;
+        }
+        .footer p {
+          margin: 5px 0;
+        }
       </style>
     </head>
     <body>
@@ -175,17 +221,22 @@ exports.createEmployee = asyncHandler(async (req, res) => {
         </div>
         <div class="content">
           <p>Dear ${firstname} ${surname},</p>
-          <p>Your account has been created successfully! Below are your login details:</p>
-          <p>Email: ${email}</p>
-          <p>Password: ${randomPassword}</p>
-          <p>Please log in and change your password.</p>
-          <p>Best Regards,<br>GSJX LTD Team</p>
+          <p>We’re excited to have you on board! Your account has been successfully created.</p>
+          <p>You can reset your password and complete your setup using the button below:</p>
+          <a href="${resetLink}">Reset Your Password</a>
+          <p>For security reasons, please do not share this email with anyone.</p>
+          <p>We’re here to help if you need assistance. Simply reply to this email or visit our <a href="https://example.com/support" style="color: #964FFE;">Support Center</a>.</p>
+          <p>Best Regards,<br>The GSJX LTD Team</p>
+        </div>
+        <div class="footer">
+          <p>GSJX LTD, 123 Example Street, City, Country</p>
+          <p>&copy; ${new Date().getFullYear()} GSJX LTD. All Rights Reserved.</p>
         </div>
       </div>
     </body>
     </html>
   `;
-	await sendEmail(email, 'Welcome to GSJX LTD', emailContent);
+await sendEmail(email, 'Welcome to GSJX LTD', emailContent);
 	const frontOfficeContent = `
 		<!DOCTYPE html>
 		<html lang="en">
@@ -221,7 +272,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	admins.forEach(async (admin) => {
 		await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
 	})
-	res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: employee, responseCode: "00" });
+	res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
 });
 // @desc    Update employee details
 // @route   PUT /api/employees/:id
@@ -344,7 +395,7 @@ exports.getInactiveEmployees = asyncHandler(async (req, res) => {
 // @route   GET /api/employees
 // @access  Private
 exports.getAllEmployees = asyncHandler(async (req, res) => {
-	const employees = await Employee.find({ });
+	const employees = await Employee.find({ status: { $ne: 'deleted'} });
 	if (employees){
 		res.status(200).json({
 			responseCode: "00",

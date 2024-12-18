@@ -19,7 +19,7 @@ exports.createExpense = asyncHandler(async (req, res) => {
 
 	const expenseData = req.body;
 
-	const expense = await Expense.create({...expenseData, createdBy: req.user._id, companyId: req.user.companyId});
+	const expense = await Expense.create({...expenseData, createdBy: req.user._id, companyId: req.user.companyId, status: "created"});
 
 	if (expense) {
 		res.status(201).json({
