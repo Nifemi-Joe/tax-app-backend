@@ -3,13 +3,13 @@ require('dotenv').config(); // Load environment variables
 
 // Configuration for the email service
 const transporter = nodemailer.createTransport({
-	host: process.env.EMAIL_HOST,
-	service: process.env.EMAIL_SERVICE,
-	port: process.env.EMAIL_PORT,
-	secure: process.env.EMAIL_SECURE, // Convert string to boolean
+	host: "smtp.gmail.com",
+	service: "gmail",
+	port: 465,
+	secure: true, // Convert string to boolean
 	auth: {
-		user: process.env.EMAIL_USER,
-		pass: process.env.EMAIL_PASS,
+		user: "globalsjxinfo@gmail.com",
+		pass: "kjrc tnrg ekbu mubc",
 	}
 });
 
