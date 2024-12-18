@@ -5,6 +5,7 @@ const { generatePDF, pdfGenerate} = require('../utils/pdfGenerator'); // Utility
 const { check, validationResult } = require('express-validator');
 const path = require('path');
 const jsPDF = require('jspdf');
+const fs = require("fs");
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const asyncHandler = require('express-async-handler');
@@ -218,6 +219,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		companyId: savedInvoice.companyId,
 		createdBy: savedInvoice.createdBy
 	});
+	const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
+
 
 	await taxEntity.save();
 	let clientIdd = savedInvoice.clientId
@@ -225,12 +228,12 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
 	console.log(combinedObj)
 	const emailContentClient = generateEmailContent('client', combinedObj);
-	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: "/Users/mac/WebstormProjects/finance-app-backend/templates/invoiceglobalsjx.pdf"}]);
-	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: "/Users/mac/WebstormProjects/finance-app-backend/templates/invoiceglobalsjx.pdf"}]);
+	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
+	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
 		const emailContentAdmin = generateEmailContent('admin', combinedObj);
-		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", path: "/Users/mac/WebstormProjects/finance-app-backend/templates/invoiceglobalsjx.pdf"}]);
+		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
 	});
 	await existingClient.save();
 
