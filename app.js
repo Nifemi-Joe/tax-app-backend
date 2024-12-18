@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
+const {generatePDF} = require("./utils/pdfGenerator");
+const {getInvoiceData} = require("./controllers/revenueController")
 
 const app = express();
 const port = process.env.PORT || 3009;
@@ -50,7 +52,25 @@ app.use('/api/vat',  require('./routes/vatRoutes'));
 app.use('/api/company',  require('./routes/companyRoutes'));
 
 app.use('/api/audit',  require('./routes/auditLogRoutes'));
+app.get('/download-invoice/:invoiceNo', async (req, res) => {
+	try {
+		const invoiceNo = req.params.invoiceNo;
+		const invoiceData = await getInvoiceData(invoiceNo); // Fetch invoice data from DB or similar
 
+		const filePath = await generatePDF('/Users/mac/WebstormProjects/finance-app-backend/templates/acs_rba_invoice.html', invoiceData);
+
+		// Serve the generated PDF file
+		res.download(filePath, `invoice_${invoiceNo}.pdf`, (err) => {
+			if (err) {
+				console.error('Error downloading the PDF:', err);
+				res.status(500).send('Error generating PDF.');
+			}
+		});
+	} catch (error) {
+		console.error('Error handling PDF request:', error);
+		res.status(500).send('Error generating PDF.');
+	}
+});
 // Handle 404
 app.use(notFound);
 

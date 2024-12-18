@@ -12,6 +12,77 @@ const ejs = require("ejs");
 const htmlPdf = require("html-pdf-node");
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
+const sendEmail = require("../utils/emailService");
+
+const generateEmailContent = (role, invoiceData) => {
+	let emailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+        <title>Invoice Created</title>
+        <style>
+          body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
+          .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+          .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+          .content { padding: 20px; line-height: 1.6; }
+          .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <h1>Invoice Created</h1>
+          </div>
+          <div class="content">
+            <p>Dear User,</p>
+            <p>Invoice ${invoiceData.invoiceNo} has been successfully created. Below are the invoice details:</p>
+            <ul>
+              <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
+              <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
+              <li><strong>Client:</strong> ${invoiceData.name}</li>
+              <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
+              <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
+            </ul>
+            <h3>Tax Details:</h3>
+		      <ul>
+		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
+		        <li><strong>Tax Amount:</strong> ${invoiceData.taxAmountDeducted}</li>
+		        <li><strong>Net Amount:</strong> ${invoiceData.netAmount}</li>
+		      </ul>
+		
+		      <h3>Client Details:</h3>
+		      <ul>
+		        <li><strong>Client Name:</strong> ${invoiceData.name}</li>
+		        <li><strong>Client Email:</strong> ${invoiceData.email}</li>
+		      </ul>
+            <p>Please click the button below to update the status of the invoice in the app:</p>
+            <a href="${invoiceData.statusUpdateLink}" style="padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none;"><span>Update Invoice</span></a>
+            <p>To download the invoice as a PDF, click the button below:</p>
+            <a href="http://localhost:3009/download-invoice/${invoiceData.invoiceNo}" class="button">Download PDF</a>
+            <p>If you encounter any issues, please contact our support team.</p>
+            <p>Best Regards,<br>GSJX LTD Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+	// Modify content for client-specific emails
+	if (role === 'client') {
+		emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
+		emailContent = emailContent.replace('<span>Update Invoice</span>', '')
+	}
+
+	return emailContent;
+};
+
 
 // Utility function to generate a random number with a specific prefix
 const generateRandomNumberWithPrefix = (prefix) => {
@@ -70,6 +141,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	await check('clientId', 'Client ID is required').notEmpty().run(req);
 	await check('amountDue', 'Amount Due is required and must be a valid number').isFloat().run(req);
 	await check('transactionDueDate', 'Transaction Due Date is required').notEmpty().run(req);
+	const user = await User.findById(req.user._id,); // Assuming you have a User model
 
 	// Extract relevant fields from req.body
 	const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue } = req.body;
@@ -108,7 +180,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Calculate total fee including VAT
 	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
 	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
-
+	invoiceData.statusUpdateLink = ""
 	invoiceData.invoiceNo = invoiceNo;
 	invoiceData.referenceNumber = referenceNumber;
 	invoiceData.transactionDate = transactionDate;
@@ -129,7 +201,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 
 	// Update the client's total invoice amount
 	existingClient.clientTotalInvoice = totalInvoices[0]?.clientTotalInvoice || 0;
-	await existingClient.save();
 	await recalculateClientTotals(invoiceData.clientId);
 	// Handle tax and other logic
 	const taxRate = determineTaxRate(savedInvoice);
@@ -147,7 +218,22 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		companyId: savedInvoice.companyId,
 		createdBy: savedInvoice.createdBy
 	});
+
 	await taxEntity.save();
+	let clientIdd = savedInvoice.clientId
+	const existingTax = await Tax.findOne({clientId: clientIdd});
+	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
+	console.log(combinedObj)
+	const emailContentClient = generateEmailContent('client', combinedObj);
+	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: "/Users/mac/WebstormProjects/finance-app-backend/templates/invoiceglobalsjx.pdf"}]);
+	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: "/Users/mac/WebstormProjects/finance-app-backend/templates/invoiceglobalsjx.pdf"}]);
+	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+	backofficeEmails.forEach(user => {
+		const emailContentAdmin = generateEmailContent('admin', combinedObj);
+		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", path: "/Users/mac/WebstormProjects/finance-app-backend/templates/invoiceglobalsjx.pdf"}]);
+	});
+	await existingClient.save();
+
 	// // Render the invoice template
 	// const invoiceHTML = path.resolve(__dirname, `../templates/${invoiceType.toLowerCase()}_invoice.html`);
 	// const pdfBuffer = await generatePDF(invoiceHTML, savedInvoice);
@@ -159,7 +245,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		responseMessage: "Invoice created successfully",
 		responseData: savedInvoice
 	});
-	const user = await User.findById(req.user._id,); // Assuming you have a User model
 	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
 });
 
@@ -277,6 +362,24 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
 		res.status(200).json({ responseCode: "22", responseMessage: "No invooices found."});
 	}
 });
+
+exports.getInvoiceData = async (invoiceNo) => {
+	try {
+		// Fetch the invoice data from the database
+		const invoiceData = await Revenue.findOne({ invoiceNo });
+
+		// Check if the invoice exists
+		if (!invoiceData) {
+			throw new Error('Invoice not found');
+		}
+
+		// Return the fetched invoice data
+		return invoiceData;
+	} catch (error) {
+		console.error('Error fetching invoice data:', error.message);
+		throw error; // Rethrow the error to be handled by the calling function
+	}
+}
 
 // @desc    Track payment status of an invoice
 // @route   GET /api/revenue/trackInvoice/:id

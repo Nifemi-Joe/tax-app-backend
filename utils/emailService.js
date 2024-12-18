@@ -1,13 +1,15 @@
 const nodemailer = require('nodemailer');
+require('dotenv').config(); // Load environment variables
 
 // Configuration for the email service
 const transporter = nodemailer.createTransport({
-	host: 'smtp.example.com', // Replace with your SMTP host
-	port: 587, // Replace with your SMTP port
-	secure: false, // Set to true if you're using port 465
+	host: process.env.EMAIL_HOST,
+	service: process.env.EMAIL_SERVICE,
+	port: process.env.EMAIL_PORT,
+	secure: process.env.EMAIL_SECURE, // Convert string to boolean
 	auth: {
-		user: 'your-email@example.com', // Replace with your email address
-		pass: 'your-email-password' // Replace with your email password
+		user: process.env.EMAIL_USER,
+		pass: process.env.EMAIL_PASS,
 	}
 });
 
@@ -21,14 +23,13 @@ const transporter = nodemailer.createTransport({
  * @param {string} [attachments] - Array of attachments (optional).
  * @returns {Promise} - A promise that resolves when the email is sent.
  */
-const sendEmail = async (to, subject, text, html = null, attachments = []) => {
+const sendEmail = async (to, subject, text, html , attachments = []) => {
 	const mailOptions = {
-		from: '"Your Company Name" <your-email@example.com>', // Replace with your 'From' address
+		from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
 		to,
 		subject,
-		text,
-		html,
-		attachments
+		html: text,
+		attachments,
 	};
 
 	try {

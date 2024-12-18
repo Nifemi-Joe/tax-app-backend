@@ -5,7 +5,7 @@
     <title>Invoice</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="root">
@@ -13,157 +13,110 @@
         <div class="w-3/5 pt-6 pb-16 px-3 mt-3 rounded second-font border border-slate-200">
             <div class="sc-exkVDC fXoaNB">
                 <div class="sc-iMDhdf bJgzxY">
-                    <span>RC: 918111</span>
+                    <span>RC: <%= data.invoiceNumber %></span>
                 </div>
                 <div class="sc-loAbOW jnwEuy">
                     <span class="sc-bPZXsP iWNPPN second-font-bold">
-                        Global SJX Limited
+                        <%= data.companyName %>
                     </span>
-                    <span class="sc-eteQWc gfjeES">Block 3 Plot 57b, Fatai Arobieke Street,
-                        <br>Lekki Phase I, Lagos.
-                    </span>
+                    <span class="sc-eteQWc gfjeES"><%= data.companyAddress %></span>
                     <span class="sc-bPZXsP iWNPPN">E-Mail:
-                        <span class="sc-eteQWc gfjeES"> talk2us@globalsjxltd.com
-                        </span>
+                        <span class="sc-eteQWc gfjeES"><%= data.email %></span>
                     </span>
                     <span class="sc-bPZXsP iWNPPN">Website:
-                        <span class="sc-eteQWc gfjeES"> talk2us@globalsjxltd.com</span>
+                        <span class="sc-eteQWc gfjeES"><%= data.website %></span>
                     </span>
                 </div>
             </div>
             <div class="sc-gkavYR kuLkzR">AUTHENTICATION TRANSACTIONS INVOICE</div>
             <div class="sc-krqSwS hgeqOK">
                 <span class="flex flex-column"><span>
-                    <span class="font-bold">Issue Date:</span> 08/08/2024</span>
-                    <span><span class="font-bold">Invoice Ref:</span> FBN/ACS/2024/07</span>
+                    <span class="font-bold">Issue Date:</span> <%= data.issueDate %></span>
+                    <span><span class="font-bold">Invoice Ref:</span> <%= data.invoiceRef %></span>
                 </span>
-                <span><span class="font-bold">Due Date: </span> 19/08/2024</span>
+                <span><span class="font-bold">Due Date: </span> <%= data.dueDate %></span>
             </div>
-            <div class="w-full border border-slate-200 mt-4">
-                <div class="w-full">
-                    <div class="sc-SQOaL dmkool">
-                        <span class="capitalize second-font-bold">a</span>
-                        - AUTHENTICATION FEE FOR PERIOD: JULY 01, 2024 – JULY 31, 2024
+
+            <% data.items.forEach(function(item) { %>
+                <div class="w-full border border-slate-200 mt-4">
+                    <div class="w-full">
+                        <div class="sc-SQOaL dmkool">
+                            <span class="capitalize second-font-bold"><%= item.name %></span>
+                        </div>
+                        <table class="w-full table">
+                            <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Volume</th>
+                                <th class="text-center">Unit Fee (<%= data.currency %>)</th>
+                                <th class="text-center">Total Fee (<%= data.currency %>)</th>
+                                <th class="text-center">Total Fee (NGN)</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <% item.transactions.forEach(function(transaction) { %>
+                                <tr>
+                                    <td><%= transaction.description %></td>
+                                    <td><%= transaction.volume %></td>
+                                    <td class="text-center"><%= transaction.unitFee %></td>
+                                    <td class="text-center"><%= transaction.totalFee %></td>
+                                    <td class="text-center"><%= transaction.totalFeeNGN %></td>
+                                </tr>
+                            <% }); %>
+                            </tbody>
+                            <tfoot>
+                            <tr>
+                                <td colspan="3" class="font-bold italic second-font-bold">Sub-Total - <%= item.name %></td>
+                                <td class="font-bold italic"><%= item.subTotal %></td>
+                                <td class="font-bold italic"><%= item.subTotalNGN %></td>
+                            </tr>
+                            </tfoot>
+                        </table>
                     </div>
-                    <table class="w-full table">
-                        <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Volume</th>
-                            <th class="text-center">Unit Fee (USD)</th>
-                            <th class="text-center">Total Fee (USD)</th>
-                            <th class="text-center">Total Fee (NGN)</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>ACS Transaction Fees</td>
-                            <td>401,713</td>
-                            <td>0.02</td>
-                            <td>8,034.26</td>
-                            <td>12,791,184.66</td>
-                        </tr>
-                        <tr>
-                            <td>RBA Transaction Fees</td>
-                            <td>397,671</td>
-                            <td>0.02</td>
-                            <td>7,953.42</td>
-                            <td>12,662,480.91</td>
-                        </tr>
-                        </tbody>
-                        <tfoot>
-                        <tr>
-                            <td colspan="3" class="font-bold italic second-font-bold">Sub-Total - <span class="capitalize">a</span></td>
-                            <td class="font-bold italic">15,987.68</td>
-                            <td class="font-bold italic">25,453,665.57</td>
-                        </tr>
-                        </tfoot>
-                    </table>
                 </div>
-                <div class="w-full mt-2">
-                    <div class="sc-SQOaL dmkool">
-                        <span class="capitalize second-font-bold">b</span>
-                        - MONTHLY HOSTING FEE FOR PERIOD: JULY 01, 2024 – JULY 31, 2024
-                    </div>
-                    <table class="w-full table">
-                        <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Volume</th>
-                            <th class="text-center">Unit Fee (USD)</th>
-                            <th class="text-center">Total Fee (USD)</th>
-                            <th class="text-center">Total Fee (NGN)</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr>
-                            <td>Monthly Hosting Fee For</td>
-                            <td>1</td>
-                            <td>2,300.00</td>
-                            <td>2,300.00</td>
-                            <td>3,661,784.00</td>
-                        </tr>
-                        <tr>
-                            <td>Monthly Hosting Fee For</td>
-                            <td>1</td>
-                            <td>2,300.00</td>
-                            <td>2,300.00</td>
-                            <td>3,661,784.00</td>
-                        </tr>
-                        </tbody>
-                        <tfoot>
-                        <tr>
-                            <td colspan="3" class="font-bold italic second-font-bold">Sub-Total -
-                                <span class="capitalize">b</span>
-                            </td>
-                            <td class="font-bold italic">4,600.00</td>
-                            <td class="font-bold italic">7,323,568.00</td>
-                        </tr>
-                        </tfoot>
-                    </table>
+            <% }); %>
+
+            <table class="w-full table-1 mt-2">
+                <tbody>
+                <tr>
+                    <td colspan="12" class="font-bold">TOTAL FEE (A+B)</td>
+                    <td class="font-bold italic text-right"><%= data.totalFee %></td>
+                    <td class="font-bold italic text-right"><%= data.totalFeeNGN %></td>
+                </tr>
+                </tbody>
+                <tbody>
+                <tr>
+                    <td colspan="12" class="font-bold">VAT</td>
+                    <td class="font-bold italic text-right"><%= data.vat %></td>
+                    <td class="font-bold italic text-right"><%= data.vatNGN %></td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="12" class="font-bold">GRAND TOTAL in NGN (CBN: N<%= data.exchangeRate %>/$1 as @ <%= data.date %>)</td>
+                    <td class="font-bold italic text-right"></td>
+                    <td class="font-bold italic text-right"><%= data.grandTotalNGN %></td>
+                </tr>
+                </tfoot>
+                <tfoot>
+                <tr>
+                    <td colspan="12" class="font-bold">GRAND TOTAL in <%= data.currency %></td>
+                    <td class="font-bold italic text-right"><%= data.grandTotal %></td>
+                    <td class="font-bold italic text-right"></td>
+                </tr>
+                </tfoot>
+            </table>
+            <div class="px-2 py-2 font-black border-slate-200 border-b bb-border second-font-bold">AMOUNT IN WORDS:
+                <span class="italic font-normal second-font"><%= data.amountInWords %></span>
+            </div>
+            <div class="px-2 py-2 font-black border-slate-200 border-b second-font-bold">INSTRUCTION:
+                <div class="italic font-normal flex gap-4 items-baseline second-font">
+                    <span>i.</span>
+                    <span> Kindly credit our NGN account with details below with the NGN value above.</span>
                 </div>
-                <table class="w-full table-1 mt-2">
-                    <tbody>
-                    <tr>
-                        <td colspan="12" class="font-bold">TOTAL FEE (A+B)</td>
-                        <td class="font-bold italic text-right">20,587.68</td>
-                        <td class="font-bold italic text-right">32,777,233.57</td>
-                    </tr>
-                    </tbody>
-                    <tbody>
-                    <tr>
-                        <td colspan="12" class="font-bold">VAT</td>
-                        <td class="font-bold italic text-right">1,544.08</td>
-                        <td class="font-bold italic text-right">2,458,292.52</td>
-                    </tr>
-                    </tbody>
-                    <tfoot>
-                    <tr>
-                        <td colspan="12" class="font-bold">GRAND TOTAL in NGN (CBN: N1,592.08/$1 as @ 07/08/2024)</td>
-                        <td class="font-bold italic text-right"></td>
-                        <td class="font-bold italic text-right">35,235,526.09</td>
-                    </tr>
-                    </tfoot>
-                    <tfoot>
-                    <tr>
-                        <td colspan="12" class="font-bold">GRAND TOTAL in USD</td>
-                        <td class="font-bold italic text-right">22,131.76</td>
-                        <td class="font-bold italic text-right"></td>
-                    </tr>
-                    </tfoot>
-                </table>
-                <div class="px-2 py-2 font-black border-slate-200 border-b bb-border second-font-bold">AMOUNT IN WORDS:
-                    <span class="italic font-normal second-font">Thirty-Five Million, Two Hundred and Thirty-Five Thousand, Five Hundred and Twenty-Six Naira, and Nine Kobo Only</span>
-                </div>
-                <div class="px-2 py-2 font-black border-slate-200 border-b second-font-bold">INSTRUCTION:
-                    <div class="italic font-normal flex gap-4 items-baseline second-font">
-                        <span>i.</span>
-                        <span> Kindly credit our NGN account with details below with the NGN value above.</span>
-                    </div>
-                    <div class="italic font-normal flex gap-4 items-baseline second-font">
-                        <span>ii.</span>
-                        <span>Please debit our account for the WHT and remit accordingly using the Tax details below.</span>
-                    </div>
+                <div class="italic font-normal flex gap-4 items-baseline second-font">
+                    <span>ii.</span>
+                    <span>Please debit our account for the WHT and remit accordingly using the Tax details below.</span>
                 </div>
             </div>
         </div>
@@ -171,308 +124,97 @@
 </div>
 </body>
 </html>
-<style>
-    @font-face {
-        font-family: 'CustomFont';
-        src: url('/font/palatino-linotype.ttf') format('truetype');
-    }
-    @font-face {
-        font-family: 'CustomFontBold';
-        src: url('/font/palatinolinotype_bold.ttf') format('truetype');
-    }
 
-    table{
+<style>
+
+    /* Custom styling */
+    table {
         border-spacing: 0;
     }
-    .table thead{
+    .table thead {
         border: none !important;
     }
 
-    .table th{
+    .table th {
         height: 50px;
     }
 
-    .table th:first-child{
+    .table th:first-child {
         padding-left: 24px;
         text-align: left;
     }
 
-    .table td{
+    .table td {
         text-align: right;
         border-bottom: 1px solid #EFF0F4;
-        /*padding: 8px 24px;*/
     }
 
-    .table th{
-        font-family: 'CustomFontBold', "Lora", sans-serif !important;
+    .table th {
+        font-family: 'Outfit', "Lora", sans-serif !important;
         border-right: 1px solid #EFF0F4;
         border-bottom: 1px solid #EFF0F4;
         font-weight: 700;
     }
 
-    .table th:last-child, .table td:last-child{
+    .table th:last-child, .table td:last-child {
         border-right: none;
     }
 
     .table td:first-child {
         text-align: left;
         padding-left: 24px;
-        width: 40%; /* Adjust this value as needed */
-    }
-    .table>:not(caption)>*>* {
-        padding: .5rem .5rem;
-        color: black;
-        background-color: #fff;
-        border-bottom-width: 1px;
-        /*box-shadow: inset 0 0 0 9999px ;*/
+        width: 40%;
     }
 
-
-    tfoot, tfoot tr, tfoot tr td{
-        background:  rgb(187, 187, 187) !important;
-    }
-    tfoot td{
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-    }
-
-    .table-1 td{
+    .table-1 td {
         width: 15.5%;
     }
-    .table-1 td:last-child{
+
+    .table-1 td:last-child {
         width: 16%;
     }
+
     .table-1 td:first-child {
         padding-left: 24px;
         width: 60%;
         font-weight: 900;
     }
 
-    .table-1 tr{
+    .table-1 tr {
         border-top: 1px solid #EFF0F4;
     }
 
-    .table-1 td{
+    .table-1 td {
         font-family: 'CustomFontBold', "Lora", sans-serif !important;
         padding-right: 8px;
-    }
-    .table td, .table-1 td {
-        border-right: 1px solid #EFF0F4;
-        border-top: 1px solid #EFF0F4;
-        /* height: 40px; */
     }
 
     @media print {
         body {
-            width: 610mm; /* A4 size */
+            width: 610mm;
             margin: 0;
         }
 
         table {
             width: 100%;
-            table-layout: fixed; /* Prevents squeezing */
+            table-layout: fixed;
         }
 
         table th, table td {
-            word-wrap: break-word; /* Prevents overflow */
+            word-wrap: break-word;
             padding: 8px;
         }
 
         .page-break {
-            page-break-before: always; /* Forces a new page */
+            page-break-before: always;
         }
     }
+
     .second-font {
         font-family: 'CustomFont', "Lora", 'Poppins', 'sans-serif' !important;
     }
-    .second-font-bold, td.second-font-bold span{
+
+    .second-font-bold {
         font-family: 'CustomFontBold', "Lora", 'Poppins', 'sans-serif' !important;
-    }
-
-    .pt-6 {
-        padding-top: 1.5rem;
-    }
-    .pb-16 {
-        padding-bottom: 4rem;
-    }
-    .px-3 {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-    }
-    .border-slate-200 {
-        --tw-border-opacity: 1;
-        border-color: rgb(226 232 240 / 1);
-    }
-    .border {
-        border-width: 1px;
-    }
-    .rounded {
-        border-radius: 0.25rem;
-    }
-    .w-3\/5 {
-        width: 100%;
-    }
-    .mt-3 {
-        margin-top: 0.75rem;
-    }
-    /*.mx-auto {*/
-    /*    margin-left: auto;*/
-    /*    margin-right: auto;*/
-    /*}*/
-    .rounded {
-        border-radius: 0.375rem !important;
-    }
-    .px-3 {
-        padding-right: 1rem !important;
-        padding-left: 1rem !important;
-    }
-    .mt-3 {
-        margin-top: 1rem !important;
-    }
-    .mx-auto {
-        margin-right: auto !important;
-        margin-left: auto !important;
-    }
-    .border {
-        border: 1px solid #dee2e6 !important;
-    }
-    .fXoaNB {
-        display: flex;
-        justify-content: space-between;
-    }
-    .kuLkzR {
-        border: 2px solid rgb(255, 255, 255);
-        border-radius: 8px;
-        box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-        background: rgb(187, 187, 187);
-        width: fit-content;
-        margin: 24px auto 0 auto;
-        font-family: 'CustomFontBold', "Lora", 'Poppins', 'sans-serif' !important;
-        padding: 16px 32px;
-        font-weight: 900;
-        font-size: 16px;
-    }
-    .bJgzxY {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-    }
-    .bJgzxY span {
-        color: black;
-    }
-    .jnwEuy {
-        display: flex;
-        flex-direction: column;
-    }
-    .iWNPPN {
-        color: rgb(214, 171, 252);
-        font-size: 18px;
-        font-weight: 900;
-        font-style: italic;
-    }
-    .gfjeES {
-        color: black;
-        font-size: 14px;
-        font-style: italic;
-        font-weight: 400;
-    }
-    .hgeqOK {
-        display: flex;
-        width: 60%;
-        padding-top: 24px;
-        margin: 0 auto;
-        justify-content: space-between;
-    }
-    .flex {
-        display: flex;
-    }
-    .flex-column {
-        flex-direction: column !important;
-    }
-    .font-bold {
-        font-weight: 700;
-    }
-    .w-full {
-        width: 100%;
-    }
-
-    .mt-4 {
-        margin-top: 1rem;
-    }
-    .mt-4 {
-        margin-top: 1.5rem !important;
-    }
-    .dmkool {
-        background: rgb(187, 187, 187);
-        font-weight: 900;
-        font-size: 16px;
-        padding: 8px 16px;
-        font-family: 'CustomFontBold', "Lora", 'Poppins', 'sans-serif' !important;
-    }
-    .capitalize {
-        text-transform: capitalize;
-    }
-    .italic {
-        font-style: italic;
-    }
-
-    .mt-2{
-        margin-top: 16px;
-    }
-    .table thead {
-        border: none !important;
-    }
-
-    .table>thead {
-        vertical-align: bottom;
-    }
-    thead {
-        background: #F7F8FA !important;
-        border: 1px solid #EFF0F4 !important;
-        border-radius: 8px !important;
-    }
-
-    table tfoot td{
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
-        font-family: 'CustomFontBold', "Lora", 'Poppins', 'sans-serif' !important;
-    }
-
-    .text-right{
-        text-align: right;
-    }
-    .font-black {
-        font-weight: 900;
-    }
-    .py-2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-    .px-2 {
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
-    .border-slate-200 {
-        --tw-border-opacity: 1;
-        border-color: rgb(226 232 240 / var(--tw-border-opacity));
-    }
-    .border-b {
-        border-bottom-width: 1px;
-    }
-    .py-2 {
-        padding-top: .5rem !important;
-        padding-bottom: .5rem !important;
-    }
-    .px-2 {
-        padding-right: .5rem !important;
-        padding-left: .5rem !important;
-    }
-
-    .font-normal {
-        font-weight: 400;
-    }
-    .bb-border{
-        border-bottom: 1px solid #EFF0F4;
     }
 </style>
