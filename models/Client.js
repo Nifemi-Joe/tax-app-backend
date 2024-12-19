@@ -11,22 +11,20 @@ const clientSchema = new Schema({
 		maxlength: [100, 'Company name must not exceed 100 characters'],
 	},
 	email: {
-		type: String,
-		required: [true, 'Client email is required'],
-		trim: true,
+		type: [String],
+		required: [true, 'At least one email is required'],
+		validate: [arrayLimit, 'Cannot have more than 10 email addresses'],
 		lowercase: true,
-		validate: {
-			validator: function (v) {
-				// Regular expression for email validation
-				return /^([\w-]+(?:\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7})$/.test(v);
-			},
-			message: props => `${props.value} is not a valid email address!`,
-		},
 	},
 	phone: {
-		type: String,
-		required: [true, 'Client phone number is required'],
-		trim: true,
+		type: [String],
+		required: [true, 'At least one phone number is required'],
+		validate: [arrayLimit, 'Cannot have more than 10 phone numbers'],
+	},
+	account: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: 'Account',
+		required: [true, 'Account is required'],
 	},
 	createdBy: {
 		type: String,
@@ -75,6 +73,11 @@ const clientSchema = new Schema({
 		default: 'pending',
 	},
 });
+
+// Validator function for array size
+function arrayLimit(val) {
+	return val.length <= 10;  // Limit to 5 emails or phone numbers
+}
 
 // Middleware to format numbers to two decimal places before saving
 clientSchema.pre('save', function (next) {

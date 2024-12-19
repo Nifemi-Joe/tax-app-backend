@@ -44,7 +44,7 @@ router.delete('/delete/:id', protect,authorize('superadmin', 'admin', 'backOffic
 // @access  Private
 router.post('/calculate', protect,calculateAndApplyTaxes);
 
-router.post('/pay/:id', protect,authorize('superadmin', 'admin', 'backOffice'), validateObjectId('id'), payTax);
+router.post('/pay/:id', protect,authorize('superadmin', 'admin', 'backOffice'), payTax);
 router.get('/summary', protect,generateTaxSummary);
 
 // @route   GET /api/taxes/report
