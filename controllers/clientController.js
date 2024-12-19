@@ -1,5 +1,6 @@
 const Client = require('../models/Client');
 const User = require('../models/User');
+const Account = require('../models/Account'); // Import the Account model
 
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
@@ -14,8 +15,9 @@ const sendEmail = require("../utils/emailService");
 exports.createClient = asyncHandler(async (req, res) => {
 	// Validate inputs
 	await check('name', 'Name is required').not().isEmpty().run(req);
-	await check('email', 'Please include a valid email').isEmail().run(req);
-	await check('phone', 'Phone number is required').isFloat().run(req);
+	await check('email', 'Email is required').isArray().withMessage('Emails must be an array').run(req);
+	await check('phone', 'Phone number is required').isArray().withMessage('Phone numbers must be an array').run(req);
+	await check('account', 'Account ID is required').not().isEmpty().run(req);
 	await check('address', 'Address is required').not().isEmpty().run(req);
 	await check('createdBy', 'Client created by is required').not().isEmpty().run(req);
 	const errors = validationResult(req);
@@ -23,13 +25,21 @@ exports.createClient = asyncHandler(async (req, res) => {
 		return res.status(400).json({ errors: errors.array() });
 	}
 
-	const { name, email, phone, address, createdBy, status = 'inactive' } = req.body;
+	const { name, email, phone, address, createdBy, status = 'pending', account } = req.body;
 
 	// Check if client already exists
 	const clientExists = await Client.findOne({ email, status: { $ne: 'deleted' } });
 	if (clientExists) {
-		return res.status(400).json({ message: 'Client already exists' });
+		return res.status(400).json({ responseCode: "22",
+			responseMessage: 'Client already exists' });
 	}
+
+	const clientAccount = await Account.findById(account);
+	if (!clientAccount) {
+		return res.status(400).json({ responseCode: "22",
+			responseMessage: 'Invalid account ID' });
+	}
+
 
 	// Create the client
 	const client = await Client.create(req.body);

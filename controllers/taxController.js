@@ -7,6 +7,59 @@ const Employee = require("../models/Employee");
 const Client = require("../models/Client");
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
+const sendEmail = require("../utils/emailService");
+
+const generateEmailContent = (taxes, totalAmount, role) => {
+	let taxDetails = taxes
+		.map(
+			(tax) => `
+        <ul>
+          <li><strong>Tax ID:</strong> ${tax.taxId}</li>
+          <li><strong>Invoice No:</strong> ${tax.invoiceNo}</li>
+          <li><strong>Tax Type:</strong> ${tax.taxType}</li>
+          <li><strong>Tax Amount:</strong> ${tax.taxAmountDeducted}</li>
+          <li><strong>Net Amount:</strong> ${tax.netAmount}</li>
+        </ul>
+      `
+		)
+		.join('');
+
+	return `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
+          .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+          .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+          .content { padding: 20px; line-height: 1.6; }
+          .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <h1>Tax Payment Confirmation</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${role === 'admin' ? 'Admin' : 'User'},</p>
+            <p>The following taxes have been successfully paid:</p>
+            ${taxDetails}
+            <p><strong>Total Amount Paid:</strong> ${totalAmount}</p>
+            <p>Thank you for your prompt payment. If you have any questions, please contact our support team.</p>
+            <p>Best Regards,<br>GSJX LTD Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+};
 
 // @desc    Get all taxes
 // @route   GET /api/taxes
@@ -183,28 +236,44 @@ exports.createTaxEntity = async () => {
 
 // Pay Tax
 exports.payTax = asyncHandler(async (req, res) => {
-	const tax = await Tax.findById(req.params.id);
-	if (!tax) {
-		res.status(404).json({ responseCode: "22", responseMessage: 'Tax entity not found' });
-		return;
+	const { taxIds, userId } = req.body;
+	const user = await User.findById(req.user._id); // Get the user who created the client
+
+
+	const taxes = await Tax.find({ taxId: { $in: taxIds } });
+	if (!taxes.length) {
+		return res.status(404).json({ responseMessage: 'No valid taxes found for the provided IDs.', responseCode: "22"});
 	}
-	const updates = req.body;
+	const alreadyPaidTaxes = taxes.filter(tax => tax.status === 'paid');
+	if (alreadyPaidTaxes.length > 0) {
+		const paidTaxIds = alreadyPaidTaxes.map(tax => tax.taxId);
+		return res.status(400).json({
+			responseMessage: 'Some taxes have already been paid.',
+			responseCode: "22",
+			alreadyPaidTaxIds: paidTaxIds,
+		});
+	}
 
-	const updatedTax = await Tax.findByIdAndUpdate(req.params.id, updates, {
-		new: true,
-		runValidators: true,
-	});
-	// tax.status = 'paid';
-	// await tax.save();
-	res.status(200).json({
-		responseCode: "00",
-		responseMessagee: "Tax paid successfully!",
-		responseData: updatedTax
-	});
-	// Update the total tax paid
-	// await updateTaxTotals();
+	const totalAmount = taxes.reduce((sum, tax) => sum + tax.totalAmount, 0);
+
+	await Tax.updateMany(
+		{ taxId: { $in: taxIds } },
+		{ status: 'paid' },
+		{ multi: true }
+	);
+
+	const emailContentForUser = generateEmailContent(taxes, totalAmount, 'user');
+	const emailContentForAdmin = generateEmailContent(taxes, totalAmount, 'admin');
+
+	// Send emails
+	await sendEmail(user.email, 'Tax Payment Confirmation', emailContentForUser);
+	const admins = await User.find({ role: { $in: ['superadmin', 'admin'] } }); // Get all admins
+	const adminEmails = admins.map(admin => admin.email);
+
+	adminEmails.forEach(email => sendEmail(email, 'Tax Payment Notification', emailContentForAdmin));
+
+	res.status(200).json({ responseMessage: 'Taxes paid successfully!', responseData: totalAmount, responseCode: "00" });
 });
-
 // Generate Summary
 exports.generateTaxSummary = async () => {
 	const taxes = await Tax.find();

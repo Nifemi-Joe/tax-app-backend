@@ -127,7 +127,7 @@ exports.userRegister = asyncHandler(async (req, res) => {
 			sendEmail(req.user.email, "New User Creation Successful", adminEmailContent);
 
 			// 2. Email to all admins notifying the creation of the user
-			const admins = await User.find({role: 'admin'}); // Get all admins
+			const admins = await User.find({ role: { $in: ['superadmin', 'admin'] } }); // Get all admins
 			const adminEmails = admins.map(admin => admin.email);
 
 			adminEmails.forEach(email => sendEmail(email, "New User Created", adminEmailContent));

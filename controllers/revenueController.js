@@ -45,6 +45,76 @@ const generateEmailContent = (role, invoiceData) => {
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${invoiceData.name}</li>
               <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
+              <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
+              <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
+            </ul>
+            <h3>Tax Details:</h3>
+		      <ul>
+		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
+		        <li><strong>Tax Amount:</strong> ${invoiceData.taxAmountDeducted}</li>
+		        <li><strong>Net Amount:</strong> ${invoiceData.netAmount}</li>
+		      </ul>
+		
+		      <h3>Client Details:</h3>
+		      <ul>
+		        <li><strong>Client Name:</strong> ${invoiceData.name}</li>
+		        <li><strong>Client Email:</strong> ${invoiceData.email}</li>
+		      </ul>
+            <p>Please click the button below to update the status of the invoice in the app:</p>
+            <a href="${invoiceData.statusUpdateLink}" style="padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none;"><span>Update Invoice</span></a>
+            <p>To download the invoice as a PDF, click the button below:</p>
+            <a href="http://localhost:3009/download-invoice/${invoiceData.invoiceNo}" class="button">Download PDF</a>
+            <p>If you encounter any issues, please contact our support team.</p>
+            <p>Best Regards,<br>GSJX LTD Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+	// Modify content for client-specific emails
+	if (role === 'client') {
+		emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
+		emailContent = emailContent.replace('<span>Update Invoice</span>', '')
+	}
+
+	return emailContent;
+};
+const generateUpdateEmailContent = (role, invoiceData) => {
+	let emailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+        <title>Invoice Created</title>
+        <style>
+          body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
+          .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+          .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+          .content { padding: 20px; line-height: 1.6; }
+          .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <h1>Invoice Updated</h1>
+          </div>
+          <div class="content">
+            <p>Dear User,</p>
+            <p>Invoice ${invoiceData.invoiceNo} has been successfully updated. Below are the invoice details:</p>
+            <ul>
+              <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
+              <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
+              <li><strong>Client:</strong> ${invoiceData.name}</li>
+              <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
             </ul>
@@ -181,7 +251,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Calculate total fee including VAT
 	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
 	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
-	invoiceData.statusUpdateLink = ""
+	invoiceData.statusUpdateLink = "http://localhost:3000/revenue"
 	invoiceData.invoiceNo = invoiceNo;
 	invoiceData.referenceNumber = referenceNumber;
 	invoiceData.transactionDate = transactionDate;
@@ -256,15 +326,21 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 exports.updateInvoice = asyncHandler(async (req, res, next) => {
 	try {
 		const { id } = req.params;
-
+		const {amountPaid, totalInvoiceFee_ngn} = req.body
 		if (!mongoose.Types.ObjectId.isValid(id)) {
 			return res.status(400).json({ success: false, error: 'Invalid invoice ID' });
 		}
+
+
 
 		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
 			new: true,
 			runValidators: true,
 		});
+		if (totalInvoiceFee_ngn === amountPaid){
+			updatedInvoice.status = "paid";
+			updatedInvoice.save();
+		}
 
 		if (!updatedInvoice) {
 			return res.status(404).json({ success: false, error: 'Invoice not found' });
@@ -278,8 +354,17 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			responseMessage: "Invoice updated successfully",
 			responseData: updatedInvoice
 		});
+		const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
 		const existingClient = await Client.findById(updatedInvoice.clientId);
 		const user = await User.findById(req.user._id,); // Assuming you have a User model
+		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice);
+		await sendEmail(existingClient.email, 'Invoice Updated', emailContentClient, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
+		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
+		const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+		backofficeEmails.forEach(user => {
+			const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice);
+			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
+		});
 		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
 	} catch (error) {
 		console.error(error); // Log the specific error
