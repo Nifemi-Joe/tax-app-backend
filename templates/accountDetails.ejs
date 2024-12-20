@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account and Tax Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #333;
+        }
+        .details {
+            margin-bottom: 20px;
+        }
+        .details h2 {
+            color: #444;
+        }
+        .details p {
+            margin: 5px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Account & Tax Details</h1>
+    </div>
+    <div class="details">
+        <h2>Account Details</h2>
+        <p><strong>Account Name:</strong> <%= accountName %></p>
+        <p><strong>Account Number:</strong> <%= accountNumber %></p>
+        <p><strong>Bank Name:</strong> <%= bankName %></p>
+    </div>
+    <div class="details">
+        <h2>Tax Details</h2>
+        <p><strong>Tax Name:</strong> <%= taxName %></p>
+        <p><strong>Tax Number:</strong> <%= taxNumber %></p>
+    </div>
+    <div class="footer">
+        <p>Thank you for doing business with us!</p>
+    </div>
+</div>
+</body>
+</html>
