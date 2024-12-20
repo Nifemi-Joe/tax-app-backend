@@ -8,6 +8,8 @@ const {
 	deleteTax,
 	payTax,
 	generateTaxSummary,
+	getWHT,
+	getWHTDetails,
 	calculateAndApplyTaxes,
 	generateTaxReport
 } = require('../controllers/taxController');
@@ -46,6 +48,8 @@ router.post('/calculate', protect,calculateAndApplyTaxes);
 
 router.post('/pay/:id', protect,authorize('superadmin', 'admin', 'backOffice'), payTax);
 router.get('/summary', protect,generateTaxSummary);
+router.get('/wht', protect,getWHT);
+router.get('/wht/:id', protect,getWHTDetails);
 
 // @route   GET /api/taxes/report
 // @desc    Generate tax report for a specific period

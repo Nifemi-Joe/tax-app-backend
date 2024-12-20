@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
 const path = require('path');
 const Employee = require("../models/Employee");
+const WHT = require('../models/WHT'); // Import the WHT model
 const Client = require("../models/Client");
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
@@ -233,6 +234,32 @@ exports.createTaxEntity = async () => {
 
 	await taxEntity.save();
 };
+
+exports.getWHTDetails = asyncHandler(async (req, res) => {
+	const { clientId } = req.query; // Optional filter by clientId
+
+	const whtDetails = await WHT.find(clientId ? { clientId } : {})
+		.populate('clientId', 'name email')
+		.sort({ createdAt: -1 });
+
+	res.status(200).json({
+		responseCode: "00",
+		responseMessage: "WHT details fetched successfully",
+		responseData: whtDetails
+	});
+});
+
+exports.getWHT = asyncHandler(async (req, res) => {
+
+	const whtDetails = await WHT.find()
+		.sort({ createdAt: -1 });
+
+	res.status(200).json({
+		responseCode: "00",
+		responseMessage: "WHT details fetched successfully",
+		responseData: whtDetails
+	});
+});
 
 // Pay Tax
 exports.payTax = asyncHandler(async (req, res) => {

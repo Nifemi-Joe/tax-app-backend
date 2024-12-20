@@ -100,6 +100,8 @@ const userSchema = new mongoose.Schema({
 	},
 	companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", default: null, },
 	firstLogin: { type: Boolean, default: true }, // Force password change on first login
+	generatedPassword: { type: Boolean, default: false }, // Force password change on first login
+
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,
 	createdAt: {

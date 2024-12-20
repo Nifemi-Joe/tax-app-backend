@@ -13,6 +13,11 @@ const generateToken = (id) => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
+const validatePasswordPolicy = (password) => {
+	const policyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+	return policyRegex.test(password);
+};
+
 // @desc    Create a new employee
 // @route   POST /api/employees
 // @access  Private
@@ -36,8 +41,10 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	const existingUser = await User.findOne({ email });
 	const existingEmployee = await Employee.findOne({ email });
 	// Generate random password
-	const randomPassword = crypto.randomBytes(8).toString('hex');
-	const hashedPassword = await bcrypt.hash(randomPassword, 10);
+	let randomPassword = crypto.randomBytes(8).toString('hex');
+	while (!validatePasswordPolicy(randomPassword)) {
+		randomPassword = crypto.randomBytes(8).toString('hex');
+	}
 	if (existingUser && existingEmployee) {
 		res.status(400).json({responseMessage: "User with this email already exists", responseCode: "22"});
 		return
@@ -55,7 +62,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 			password: randomPassword,
 			createdBy: req.user._id,
 		});
-		const resetLink = `http://localhost:3000/create-new-password?email=${encodeURIComponent(email)}&id=${encodeURIComponent(user._id)}`;
+		const resetLink = `https://cheerful-cendol-19cd82.netlify.app/`;
 
 		// Send email to the employee
 		const emailContent = `
@@ -65,7 +72,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
-      <title>Welcome to GSJX LTD</title>
+      <title>Welcome - GSJX LTD</title>
       <style>
         body {
           font-family: 'Outfit', sans-serif;
@@ -101,16 +108,6 @@ exports.createEmployee = asyncHandler(async (req, res) => {
           font-size: 16px;
           margin: 10px 0;
         }
-        .content a {
-          display: inline-block;
-          margin-top: 20px;
-          padding: 10px 15px;
-          font-size: 16px;
-          text-decoration: none;
-          color: #ffffff;
-          background-color: #964FFE;
-          border-radius: 4px;
-        }
         .footer {
           margin-top: 20px;
           text-align: center;
@@ -125,15 +122,16 @@ exports.createEmployee = asyncHandler(async (req, res) => {
     <body>
       <div class="email-container">
         <div class="header">
-          <h1>Welcome to GSJX LTD</h1>
+          <h1>Your Login Details</h1>
         </div>
         <div class="content">
           <p>Dear ${firstname} ${surname},</p>
-          <p>We’re excited to have you on board! Your account has been successfully created.</p>
-          <p>You can reset your password and complete your setup using the button below:</p>
-          <a href="${resetLink}">Reset Your Password</a>
-          <p>For security reasons, please do not share this email with anyone.</p>
-          <p>We’re here to help if you need assistance. Simply reply to this email or visit our <a href="https://example.com/support" style="color: #964FFE;">Support Center</a>.</p>
+          <p>We’re pleased to inform you that your account has been successfully created.</p>
+          <p>Find your generated password below:</p>
+          <p style="font-weight: bold; font-size: 18px; background-color: #f3f3f3; padding: 10px; border-radius: 4px; text-align: center;">${randomPassword}</p>
+          <a href="${resetLink}" style="color: #964FFE; margin-top: 12px; font-weight: 500">Login to your accountt</a>
+          <p>Please use this password to log in to your account. For security reasons, ensure you change your password immediately after logging in.</p>
+          <p>If you encounter any issues, feel free to contact our <a href="https://example.com/support" style="color: #964FFE;">Support Center</a>.</p>
           <p>Best Regards,<br>The GSJX LTD Team</p>
         </div>
         <div class="footer">
@@ -188,6 +186,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 			lastname: surname,
 			email,
 			department,
+			generatedPassword: true,
 			position,
 			salary,
 			phoneNumber: phoneNumber,
@@ -208,7 +207,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 			password: randomPassword,
 			createdBy: req.user._id,
 		});
-		const resetLink = `http://localhost:3000/create-new-password?email=${encodeURIComponent(email)}&id=${encodeURIComponent(user._id)}&token=${token}`;
+		const resetLink = `https://cheerful-cendol-19cd82.netlify.app/`;
 
 		// Send email to the employee
 		const emailContent = `
@@ -218,7 +217,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
-      <title>Welcome to GSJX LTD</title>
+      <title>Welcome - GSJX LTD</title>
       <style>
         body {
           font-family: 'Outfit', sans-serif;
@@ -254,16 +253,6 @@ exports.createEmployee = asyncHandler(async (req, res) => {
           font-size: 16px;
           margin: 10px 0;
         }
-        .content a {
-          display: inline-block;
-          margin-top: 20px;
-          padding: 10px 15px;
-          font-size: 16px;
-          text-decoration: none;
-          color: #ffffff;
-          background-color: #964FFE;
-          border-radius: 4px;
-        }
         .footer {
           margin-top: 20px;
           text-align: center;
@@ -278,15 +267,16 @@ exports.createEmployee = asyncHandler(async (req, res) => {
     <body>
       <div class="email-container">
         <div class="header">
-          <h1>Welcome to GSJX LTD</h1>
+          <h1>Your Login Details</h1>
         </div>
         <div class="content">
           <p>Dear ${firstname} ${surname},</p>
-          <p>We’re excited to have you on board! Your account has been successfully created.</p>
-          <p>You can reset your password and complete your setup using the button below:</p>
-          <a href="${resetLink}">Reset Your Password</a>
-          <p>For security reasons, please do not share this email with anyone.</p>
-          <p>We’re here to help if you need assistance. Simply reply to this email or visit our <a href="https://example.com/support" style="color: #964FFE;">Support Center</a>.</p>
+          <p>We’re pleased to inform you that your account has been successfully created.</p>
+          <p>Find your generated password below:</p>
+          <p style="font-weight: bold; font-size: 18px; background-color: #f3f3f3; padding: 10px; border-radius: 4px; text-align: center;">${randomPassword}</p>
+          <a href="${resetLink}" style="color: #964FFE; margin-top: 12px; font-weight: 500">Login to your accountt</a>
+          <p>Please use this password to log in to your account. For security reasons, ensure you change your password immediately after logging in.</p>
+          <p>If you encounter any issues, feel free to contact our <a href="https://example.com/support" style="color: #964FFE;">Support Center</a>.</p>
           <p>Best Regards,<br>The GSJX LTD Team</p>
         </div>
         <div class="footer">
