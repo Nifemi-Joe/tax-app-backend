@@ -257,7 +257,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	await check('userId', 'User ID is required').notEmpty().run(req);
 	await check('clientId', 'Client ID is required').notEmpty().run(req);
 	await check('amountDue', 'Amount Due is required and must be a valid number').isFloat().run(req);
-	await check('transactionDueDate', 'Transaction Due Date is required').notEmpty().run(req);
+	await check('transactionDate', 'Transaction Date is required').notEmpty().run(req);
 	const user = await User.findById(req.user._id,); // Assuming you have a User model
 
 	// Extract relevant fields from req.body
@@ -298,7 +298,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const referenceNumber = generateRandomNumberWithPrefix('REF');
 
 	// Set the transaction date to today's date
-	const transactionDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
 	// Calculate total fee including VAT
 	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
