@@ -19,7 +19,7 @@ const expenseSchema = new mongoose.Schema(
 			min: [0, 'Amount must be a positive number'],
 		},
 		status: {
-			type: Number,
+			type: String,
 			required: true,
 			default: "created",
 			enum: ["created", "approved", "deleted"]
