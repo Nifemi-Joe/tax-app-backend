@@ -261,7 +261,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const user = await User.findById(req.user._id,); // Assuming you have a User model
 
 	// Extract relevant fields from req.body
-	const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue } = req.body;
+	const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate } = req.body;
 
 	if (invoiceType === 'ACS_RBA' && (!service1 || !service2)) {
 		return res.status(400).json({ error: 'Service1 and Service2 are required for ACS_RBA invoices' });
