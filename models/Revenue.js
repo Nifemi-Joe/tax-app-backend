@@ -81,7 +81,7 @@ const InvoiceSchema = new Schema({
 	referenceNumber: { type: String, required: true },
 	clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
 	transactionDate: { type: Date, required: true },
-	transactionDueDate: { type: Date, required: true },
+	transactionDueDate: { type: Date },
 	amountInWords: String,
 	amountPaid: {
 		type: Number,
@@ -116,6 +116,11 @@ const InvoiceSchema = new Schema({
 		type: Number,
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure vat is fixed to 2 decimal places
 	},
+	wht: {
+		type: Number,
+		default: 10,
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure vat is fixed to 2 decimal places
+	},
 	totalInvoiceFeePlusVat_usd: {
 		type: Number,
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFeePlusVat_usd is fixed to 2 decimal places
@@ -142,6 +147,15 @@ const InvoiceSchema = new Schema({
 		type: String,
 	},
 }, { timestamps: true });
+
+InvoiceSchema.pre('save', function (next) {
+	if (this.transactionDate) {
+		// Set transactionDueDate to 14 days after transactionDate
+		this.transactionDueDate = new Date(this.transactionDate);
+		this.transactionDueDate.setDate(this.transactionDueDate.getDate() + 14);
+	}
+	next();
+});
 
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
 

@@ -1,6 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const { Invoice } = require('./models/Revenue'); // Assuming you have an Invoice model
+const cron = require('node-cron');
+
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -8,6 +11,7 @@ const path = require('path');
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
 const {generatePDF} = require("./utils/pdfGenerator");
 const {getInvoiceData} = require("./controllers/revenueController")
+const sendEmail = require("./utils/emailService");
 
 const app = express();
 const port = process.env.PORT || 3009;
@@ -69,6 +73,29 @@ app.get('/download-invoice/:invoiceNo', async (req, res) => {
 	} catch (error) {
 		console.error('Error handling PDF request:', error);
 		res.status(500).send('Error generating PDF.');
+	}
+});
+
+cron.schedule('0 0 * * *', async () => { // This runs every day at midnight
+	try {
+		const invoices = await Invoice.find({
+			transactionDate: { $lte: new Date(new Date() - 14 * 24 * 60 * 60 * 1000) }, // Invoices older than 14 days
+			status: { $ne: 'paid' } // Filter invoices that are not paid
+		});
+
+		for (let invoice of invoices) {
+			const client = invoice.client; // Assuming invoice has a 'client' reference
+
+			// Send reminder email to the client
+			const subject = `Reminder: Invoice #${invoice.invoiceNo} is Overdue`;
+			const text = `Dear ${client.name},\n\nWe would like to remind you that your invoice #${invoice.invoiceNo}, created on ${invoice.createdAt}, is now 14 days old and still unpaid. Please settle the payment at your earliest convenience.\n\nIf you have already made the payment, please disregard this message.\n\nBest regards,\nGlobal SJX Ltd`;
+
+			// Sending the email
+			await sendEmail(client.email, subject, text);
+			console.log(`Reminder email sent for Invoice #${invoice.invoiceNo} to ${client.email}`);
+		}
+	} catch (error) {
+		console.error('Error sending reminder emails:', error);
 	}
 });
 // Handle 404

@@ -33,6 +33,9 @@ const clientSchema = new Schema({
 	updatedBy: {
 		type: String,
 	},
+	reasonForUpdate: {
+		type: String
+	},
 	deletedBy: {
 		type: String,
 	},

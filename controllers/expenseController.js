@@ -89,13 +89,8 @@ exports.printExpense = asyncHandler(async (req, res) => {
 // @access  Private
 exports.getAllExpenses = asyncHandler(async (req, res) => {
 	let expenses;
-	if (req.user.role === "admin" || req.user.role === "superadmin") {
-		expenses = await Expense.find();
-	}
-	else {
-		expenses = await Expense.find({companyId: req.user.companyId });
+	expenses = await Expense.find();
 
-	}
 	if (expenses){
 		res.status(200).json({
 			responseCode: "00",
