@@ -15,6 +15,7 @@ const htmlPdf = require("html-pdf-node");
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
 const sendEmail = require("../utils/emailService");
+const Account = require("../models/Account");
 
 const generateEmailContent = (role, invoiceData) => {
 	let emailContent = `
@@ -26,10 +27,11 @@ const generateEmailContent = (role, invoiceData) => {
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
         <title>Invoice Created</title>
         <style>
-          body { font-family: "Outfit", sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
+          body { font-family: "Outfit" !important; sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
           .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
           .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
-          .content { padding: 20px; line-height: 1.6; }
+          .content { padding: 20px; line-height: 1.6; font-family: "Outfit" !important;}
+          .cotent p, .content li {font-family: "Outfit" !important;}
           .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
         </style>
       </head>
@@ -292,6 +294,13 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 			responseMessage: "Client awaiting approval."
 		});
 	}
+	if (!existingClient.account){
+		return res.status(404).json({
+			responseCode: "24",
+			responseMessage: "Client does not have a linked account"
+		});
+	}
+	const existingAccount = await Account.findOne({ _id: existingClient.account });
 
 	// Automatically generate the invoice number and reference number
 	const invoiceNo = generateRandomNumberWithPrefix('INV');
@@ -308,7 +317,11 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	invoiceData.transactionDate = transactionDate;
 	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
 	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
+
 	invoiceData.rateDate = transactionDate;
+	let newDate = new Date(transactionDate);
+	newDate.setDate(newDate.getDate() + 14);
+	invoiceData.transactionDueDate = newDate;
 	// invoiceData.companyId = req.user.companyId;
 	invoiceData.createdBy = req.user._id;
 
@@ -364,12 +377,13 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
 	console.log(combinedObj)
 	const emailContentClient = generateEmailContent('client', combinedObj);
-	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
-	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
+	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"})
+	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}]);
+	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}]);
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
 		const emailContentAdmin = generateEmailContent('admin', combinedObj);
-		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", path: templatePath}]);
+		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", content: pdf}]);
 	});
 	await existingClient.save();
 
@@ -395,7 +409,6 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 	try {
 		const { id } = req.params;
 
-		const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
 		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
 			new: true,
 			runValidators: true,
@@ -406,6 +419,8 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			return res.status(400).json({ success: false, responseCode: "22",
 				responseMessage: 'Invalid invoice ID' });
 		}
+		const existingAccount = await Account.findOne({ _id: existingClient.account });
+		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"})
 
 
 		if (!updatedInvoice) {
@@ -429,14 +444,15 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				whtRecord.status = "paid";
 				await whtRecord.save();
 			}
+
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice);
-			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", path: templatePath }]);
-			await sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", path: templatePath }]);
+			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf }]);
+			await sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
 
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
 				const emailContentAdmin = generateCompleteEmailContent('admin', updatedInvoice);
-				sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", path: templatePath }]);
+				sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
 			});
 
 			await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
@@ -453,13 +469,13 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 
 		// Send notifications
 		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice);
-		await sendEmail(existingClient.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", path: templatePath }]);
-		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", path: templatePath }]);
+		await sendEmail(existingClient.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
+		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
 
 		const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 		backofficeEmails.forEach(user => {
 			const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice);
-			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", path: templatePath }]);
+			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf }]);
 		});
 
 		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);

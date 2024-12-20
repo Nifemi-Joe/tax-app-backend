@@ -41,9 +41,9 @@ async function generatePDF(templatePath, invoiceData) {
 	}
 }
 
-exports.pdfGenerate = async (data) => {
+const pdfGenerate = async (data) => {
 	try {
-		const templatePath = path.join(__dirname, 'templates', 'accountDetails.ejs');
+		const templatePath = path.join(__dirname, '../templates', 'accountDetails.ejs');
 
 
 		// Render the EJS template with the invoice data
@@ -65,4 +65,4 @@ exports.pdfGenerate = async (data) => {
 	}
 };
 
-module.exports = { generatePDF };
+module.exports = { generatePDF, pdfGenerate };
