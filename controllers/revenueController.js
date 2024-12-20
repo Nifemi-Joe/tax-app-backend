@@ -395,7 +395,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 exports.updateInvoice = asyncHandler(async (req, res, next) => {
 	try {
 		const { id } = req.params;
-		const { amountPaid, totalInvoiceFee_ngn } = req.body;
 
 		const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
 		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
@@ -425,8 +424,10 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 
 			if (taxRecord) {
 				taxRecord.status = "paid";
-				whtRecord.status = "paid";
 				await taxRecord.save();
+			}
+			if (whtRecord){
+				whtRecord.status = "paid";
 				await whtRecord.save();
 			}
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice);
