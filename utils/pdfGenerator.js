@@ -1,6 +1,7 @@
 const fs = require('fs');
 const pdf = require('pdfkit');
 const handlebars = require('handlebars');
+const path = require('path')
 const ejs = require('ejs');
 const puppeteer = require('puppeteer');
 
@@ -40,19 +41,25 @@ async function generatePDF(templatePath, invoiceData) {
 	}
 }
 
-exports.pdfGenerate = async (templatePath, data) => {
+exports.pdfGenerate = async (data) => {
 	try {
+		const templatePath = path.join(__dirname, 'templates', 'accountDetails.ejs');
+
 
 		// Render the EJS template with the invoice data
-		const htmlContent = await ejs.renderFile(templatePath, data);
+		const html = await ejs.renderFile(templatePath, data);
 
-		// Options for generating PDF
-		const options = { format: 'A4' };
+		const browser = await puppeteer.launch();
+		const page = await browser.newPage();
 
-		// Create a PDF buffer from the HTML content
-		const pdfBuffer = await htmlPdf.generatePdf({ content: htmlContent }, options);
+		await page.setContent(html);
+		const pdf = await page.pdf({
+			format: 'A4',
+			printBackground: true,
+		});
 
-		return pdfBuffer;
+		await browser.close();
+		return pdf;
 	} catch (error) {
 		throw new Error('Error generating PDF: ' + error.message);
 	}
