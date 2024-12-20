@@ -415,7 +415,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				responseMessage: 'Invoice not found' });
 		}
 
-		if (totalInvoiceFee_ngn === amountPaid) {
+		if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
 			updatedInvoice.status = "paid";
 			await updatedInvoice.save();
 
