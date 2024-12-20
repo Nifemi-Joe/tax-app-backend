@@ -398,16 +398,17 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		const { amountPaid, totalInvoiceFee_ngn } = req.body;
 
 		const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
+		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
+			new: true,
+			runValidators: true,
+		});
 		const existingClient = await Client.findById(updatedInvoice.clientId);
 		const user = await User.findById(req.user._id);
 		if (!mongoose.Types.ObjectId.isValid(id)) {
 			return res.status(400).json({ success: false, responseCode: "22",
 				responseMessage: 'Invalid invoice ID' });
 		}
-		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
-			new: true,
-			runValidators: true,
-		});
+
 
 		if (!updatedInvoice) {
 			return res.status(404).json({ success: false, responseCode: "22",
