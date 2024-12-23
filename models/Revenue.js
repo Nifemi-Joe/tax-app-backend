@@ -6,6 +6,7 @@ const ServiceSchema = new Schema({
 	id: String,
 	description: String,
 	date: Date,
+	name: String,
 	transactions: [{
 		id: String,
 		description: String,
@@ -82,6 +83,7 @@ const InvoiceSchema = new Schema({
 	clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
 	transactionDate: { type: Date, required: true },
 	transactionDueDate: { type: Date },
+	period: {type: String, enum: ["monthly", "quarterly", "annually"], default: "monthly"},
 	amountInWords: String,
 	amountPaid: {
 		type: Number,
@@ -95,7 +97,7 @@ const InvoiceSchema = new Schema({
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure amountDue is fixed to 2 decimal places
 	},
 	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid'], required: true },
-	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES'], required: true },
+	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES', "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "CONSULTATION", "TRAINING", "LICENSE"], required: true },
 	companyName: { type: String, required: true },
 	service1: {
 		type: ServiceSchema,
@@ -129,7 +131,6 @@ const InvoiceSchema = new Schema({
 		type: Number,
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFeePlusVat_ngn is fixed to 2 decimal places
 	},
-	rateDate: { type: Date },
 	accountName: { type: String },
 	accountNumber: { type: String },
 	bankName: { type: String },

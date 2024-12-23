@@ -265,12 +265,12 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Extract relevant fields from req.body
 	const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate } = req.body;
 
-	if (invoiceType === 'ACS_RBA' && (!service1 || !service2)) {
-		return res.status(400).json({ error: 'Service1 and Service2 are required for ACS_RBA invoices' });
-	} else if (invoiceType === 'OUTSOURCING' && !roles) {
-		return res.status(400).json({ error: 'Roles are required for OUTSOURCING invoices' });
+	if ((invoiceType === 'ACS_RBA' || invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL"|| invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL") && (!service1 || !service2)) {
+		return res.status(400).json({ responseMessage: 'Service1 and Service2 are required for ACS_RBA invoices', responseCode: "22" });
+	} else if ((invoiceType === 'OUTSOURCING' || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") && !roles) {
+		return res.status(400).json({ responseMessage: 'Roles are required for OUTSOURCING invoices', responseCode: "22" });
 	} else if (invoiceType === 'OTHER_INVOICES' && !otherInvoiceServices) {
-		return res.status(400).json({ error: 'Service details are required for OTHER_INVOICES' });
+		return res.status(400).json({ responseMessage: 'Service details are required for OTHER_INVOICES', responseCode: "22" });
 	}
 
 	const errors = validationResult(req);
@@ -354,8 +354,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		createdBy: savedInvoice.createdBy
 	});
 	const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
-
-
 	await taxEntity.save();
 	let clientIdd = savedInvoice.clientId
 	const whtRate = invoiceData.wht || 10; // Assume a default WHT rate if not provided
@@ -377,13 +375,14 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
 	console.log(combinedObj)
 	const emailContentClient = generateEmailContent('client', combinedObj);
-	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"})
-	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}]);
-	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}]);
+	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
+	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: transactionDate.toLocaleDateString(), invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj}, "acs_rba_invoice.ejs")
+	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
+	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
 		const emailContentAdmin = generateEmailContent('admin', combinedObj);
-		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", content: pdf}]);
+		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
 	});
 	await existingClient.save();
 
@@ -420,7 +419,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				responseMessage: 'Invalid invoice ID' });
 		}
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"})
+		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
 
 
 		if (!updatedInvoice) {
