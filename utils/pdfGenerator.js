@@ -41,11 +41,11 @@ async function generatePDF(templatePath, invoiceData) {
 	}
 }
 
-const pdfGenerate = async (data) => {
+const pdfGenerate = async (data, file) => {
 	try {
-		const templatePath = path.join(__dirname, '../templates', 'accountDetails.ejs');
+		const templatePath = path.join(__dirname, '../templates', file);
 
-
+		console.log(templatePath)
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
