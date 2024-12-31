@@ -393,11 +393,13 @@ exports.getProfileUser = asyncHandler(async (req, res) => {
 		 if (!validatePassword(password)) {
 			 return res.status(400).json({ responseMessage: "Password does not meet security requirements.", responseCode: "22" });
 		 }
-
+		 console.log(user)
 		 // Hash the new password
 		 const salt = await bcrypt.genSalt(10);
-		 user.password = await bcrypt.hash(password, salt);
+		 user.generatedPassword = false;
+		 user.password = password;
 		 await user.save();
+		 console.log(user)
 
 		 // Email HTML content
 		 const emailContent = `

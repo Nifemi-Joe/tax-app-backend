@@ -40,7 +40,10 @@ exports.createClient = asyncHandler(async (req, res) => {
 			responseMessage: 'Invalid account ID' });
 	}
 
-
+	if (clientAccount.status !== "active") {
+		return res.status(400).json({ responseCode: "22",
+			responseMessage: 'The account details are not active.' });
+	}
 	// Create the client
 	const client = await Client.create(req.body);
 
