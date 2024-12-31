@@ -17,6 +17,22 @@ const Service = require("../models/Service");
 	 }
 	 return password;
  }
+
+ function validatePassword(password) {
+	 const lengthRequirement = /.{8,}/;
+	 const uppercaseRequirement = /[A-Z]/;
+	 const lowercaseRequirement = /[a-z]/;
+	 const numberRequirement = /\d/;
+	 const specialCharRequirement = /[!@#$%^&*()_+\[\]{}|;:,.<>?]/;
+
+	 return (
+		 lengthRequirement.test(password) &&
+		 uppercaseRequirement.test(password) &&
+		 lowercaseRequirement.test(password) &&
+		 numberRequirement.test(password) &&
+		 specialCharRequirement.test(password)
+	 );
+ }
 // Generate JWT
 const generateToken = (id) => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -373,10 +389,13 @@ exports.getProfileUser = asyncHandler(async (req, res) => {
 		 if (!user) {
 			 res.status(404).json({responseMessage: "User not found.", responseCode: "22"});
 		 }
+// Validate the new password
+		 if (!validatePassword(password)) {
+			 return res.status(400).json({ responseMessage: "Password does not meet security requirements.", responseCode: "22" });
+		 }
 
 		 // Hash the new password
-		 const hashedPassword = await bcrypt.hash(password, 10);
-		 user.password = hashedPassword;
+		 user.password = password;
 		 await user.save();
 
 		 // Email HTML content
