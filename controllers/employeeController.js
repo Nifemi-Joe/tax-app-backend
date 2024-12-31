@@ -13,10 +13,27 @@ const generateToken = (id) => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-const validatePasswordPolicy = (password) => {
-	const policyRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
-	return policyRegex.test(password);
-};
+function generateRandomPassword() {
+	const length = 8;
+	const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+	const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
+	const numbers = '0123456789';
+	const specialChars = '!@#$%^&*()_+[]{}|;:,.<>?';
+	const allChars = uppercaseChars + lowercaseChars + numbers + specialChars;
+
+	let password = '';
+	password += uppercaseChars[Math.floor(Math.random() * uppercaseChars.length)];
+	password += lowercaseChars[Math.floor(Math.random() * lowercaseChars.length)];
+	password += numbers[Math.floor(Math.random() * numbers.length)];
+	password += specialChars[Math.floor(Math.random() * specialChars.length)];
+
+	for (let i = password.length; i < length; i++) {
+		password += allChars[Math.floor(Math.random() * allChars.length)];
+	}
+
+	// Shuffle the password to ensure randomness
+	return password.split('').sort(() => 0.5 - Math.random()).join('');
+}
 
 // @desc    Create a new employee
 // @route   POST /api/employees
@@ -41,10 +58,8 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	const existingUser = await User.findOne({ email });
 	const existingEmployee = await Employee.findOne({ email });
 	// Generate random password
-	let randomPassword = crypto.randomBytes(8).toString('hex');
-	while (!validatePasswordPolicy(randomPassword)) {
-		randomPassword = crypto.randomBytes(8).toString('hex');
-	}
+	const randomPassword = generateRandomPassword();
+
 	if (existingUser && existingEmployee) {
 		res.status(400).json({responseMessage: "User with this email already exists", responseCode: "22"});
 		return

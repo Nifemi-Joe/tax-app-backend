@@ -17,7 +17,7 @@ const logAction = require("../utils/auditLogger");
 const sendEmail = require("../utils/emailService");
 const Account = require("../models/Account");
 
-const generateEmailContent = (role, invoiceData) => {
+const generateEmailContent = (role, invoiceData, client) => {
 	let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -46,7 +46,7 @@ const generateEmailContent = (role, invoiceData) => {
             <ul>
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
-              <li><strong>Client:</strong> ${invoiceData.name}</li>
+              <li><strong>Client:</strong> ${client.name}</li>
               <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
               <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
@@ -61,8 +61,8 @@ const generateEmailContent = (role, invoiceData) => {
 		
 		      <h3>Client Details:</h3>
 		      <ul>
-		        <li><strong>Client Name:</strong> ${invoiceData.name}</li>
-		        <li><strong>Client Email:</strong> ${invoiceData.email}</li>
+		        <li><strong>Client Name:</strong> ${client.name}</li>
+		        <li><strong>Client Email:</strong> ${client.email[0]}</li>
 		      </ul>
             <p>Please click the button below to update the status of the invoice in the app:</p>
             <a href="${invoiceData.statusUpdateLink}" style="padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none;"><span>Update Invoice</span></a>
@@ -87,7 +87,7 @@ const generateEmailContent = (role, invoiceData) => {
 
 	return emailContent;
 };
-const generateUpdateEmailContent = (role, invoiceData) => {
+const generateUpdateEmailContent = (role, invoiceData, client) => {
 	let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -115,7 +115,7 @@ const generateUpdateEmailContent = (role, invoiceData) => {
             <ul>
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
-              <li><strong>Client:</strong> ${invoiceData.name}</li>
+              <li><strong>Client:</strong> ${client.name}</li>
               <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
               <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
@@ -130,8 +130,8 @@ const generateUpdateEmailContent = (role, invoiceData) => {
 		
 		      <h3>Client Details:</h3>
 		      <ul>
-		        <li><strong>Client Name:</strong> ${invoiceData.name}</li>
-		        <li><strong>Client Email:</strong> ${invoiceData.email}</li>
+		        <li><strong>Client Name:</strong> ${client.name}</li>
+		        <li><strong>Client Email:</strong> ${client.email[0]}</li>
 		      </ul>
             <p>Please click the button below to update the status of the invoice in the app:</p>
             <a href="${invoiceData.statusUpdateLink}" style="padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none;"><span>Update Invoice</span></a>
@@ -157,7 +157,7 @@ const generateUpdateEmailContent = (role, invoiceData) => {
 	return emailContent;
 };
 
-const generateCompleteEmailContent = (role, invoiceData) => {
+const generateCompleteEmailContent = (role, invoiceData, client) => {
 	let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -180,7 +180,7 @@ const generateCompleteEmailContent = (role, invoiceData) => {
             <h1>Payment Acknowledgment</h1>
           </div>
           <div class="content">
-            <p>Dear ${role === 'client' ? invoiceData.name : 'User'},</p>
+            <p>Dear ${role === 'client' ? client.name : 'User'},</p>
             <p>We are pleased to inform you that payment for invoice <strong>${invoiceData.invoiceNo}</strong> has been successfully received. Below are the details:</p>
             <ul>
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
@@ -258,6 +258,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Validate incoming request
 	await check('userId', 'User ID is required').notEmpty().run(req);
 	await check('clientId', 'Client ID is required').notEmpty().run(req);
+	await check('period', 'Transaction Period is required').notEmpty().run(req);
 	await check('amountDue', 'Amount Due is required and must be a valid number').isFloat().run(req);
 	await check('transactionDate', 'Transaction Date is required').notEmpty().run(req);
 	const user = await User.findById(req.user._id,); // Assuming you have a User model
@@ -301,13 +302,10 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		});
 	}
 	const existingAccount = await Account.findOne({ _id: existingClient.account });
-
 	// Automatically generate the invoice number and reference number
 	const invoiceNo = generateRandomNumberWithPrefix('INV');
 	const referenceNumber = generateRandomNumberWithPrefix('REF');
-
 	// Set the transaction date to today's date
-
 	// Calculate total fee including VAT
 	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
 	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
@@ -317,7 +315,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	invoiceData.transactionDate = transactionDate;
 	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
 	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
-
 	invoiceData.rateDate = transactionDate;
 	let newDate = new Date(transactionDate);
 	newDate.setDate(newDate.getDate() + 14);
@@ -358,7 +355,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	let clientIdd = savedInvoice.clientId
 	const whtRate = invoiceData.wht || 10; // Assume a default WHT rate if not provided
 	const whtAmount = savedInvoice.totalInvoiceFee_ngn * (whtRate / 100);
-
 	const whtEntity = new WHT({
 		whtId: generateRandomNumberWithPrefix('WHT'),
 		invoiceNo: savedInvoice.invoiceNo,
@@ -369,23 +365,24 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		status: "unpaid",
 		createdBy: savedInvoice.createdBy
 	});
-
+	await existingClient.save();
 	await whtEntity.save();
 	const existingTax = await Tax.findOne({clientId: clientIdd});
 	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
 	console.log(combinedObj)
-	const emailContentClient = generateEmailContent('client', combinedObj);
+	const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
+	let formatDate = new Date(transactionDate).toLocaleDateString();
 	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
-	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: transactionDate.toLocaleDateString(), invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj}, "acs_rba_invoice.ejs")
-	await sendEmail(existingClient.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
-	await sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
+	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj}, "acs_rba_invoice.ejs")
+	existingClient.email.forEach((person)=> {
+		sendEmail(person, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
+	})
+	sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
-		const emailContentAdmin = generateEmailContent('admin', combinedObj);
+		const emailContentAdmin = generateEmailContent('admin', combinedObj, existingClient);
 		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
 	});
-	await existingClient.save();
-
 	// // Render the invoice template
 	// const invoiceHTML = path.resolve(__dirname, `../templates/${invoiceType.toLowerCase()}_invoice.html`);
 	// const pdfBuffer = await generatePDF(invoiceHTML, savedInvoice);
@@ -418,15 +415,14 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			return res.status(400).json({ success: false, responseCode: "22",
 				responseMessage: 'Invalid invoice ID' });
 		}
-		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
-
-
 		if (!updatedInvoice) {
 			return res.status(404).json({ success: false, responseCode: "22",
 				responseMessage: 'Invoice not found' });
 		}
-
+		let newDate = new Date(updatedInvoice.transactionDate);
+		newDate.setDate(newDate.getDate() + 14);
+		const existingAccount = await Account.findOne({ _id: existingClient.account });
+		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
 		if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
 			updatedInvoice.status = "paid";
 			await updatedInvoice.save();
@@ -444,14 +440,17 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				await whtRecord.save();
 			}
 
-			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice);
-			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf }]);
-			await sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
-
+			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
+			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice}, "acs_rba_invoice.ejs")
+			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+			existingClient.email.forEach((person)=> {
+				sendEmail(person, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+			})
+			sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateCompleteEmailContent('admin', updatedInvoice);
-				sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
+				const emailContentAdmin = generateCompleteEmailContent('admin', updatedInvoice, existingClient);
+				sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
 			});
 
 			await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
@@ -465,16 +464,17 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 
 		await recalculateClientTotals(updatedInvoice.clientId);
 
-
+		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice}, "acs_rba_invoice.ejs")
 		// Send notifications
-		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice);
-		await sendEmail(existingClient.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
-		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }]);
-
+		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
+		existingClient.email.forEach((person)=> {
+			sendEmail(person, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+		})
+		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
 		const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 		backofficeEmails.forEach(user => {
-			const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice);
-			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf }]);
+			const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
+			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf }, { filename: "Invoice.pdf", content: pdfInvoice }]);
 		});
 
 		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
@@ -547,26 +547,28 @@ exports.downloadInvoice = asyncHandler(async (req, res) => {
 exports.spoolInvoices = asyncHandler(async (req, res) => {
 	const { client, startDate, endDate } = req.query;
 
-	const query = {};
+	const query = { status: { $ne: 'deleted' } };
 
 	if (client) query.client = client;
 	if (startDate && endDate) {
 		query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
 	}
-	let invoices;
-	if (req.user.role === "admin" || req.user.role === "superadmin") {
-		invoices = await Revenue.find({status: {$ne: 'deleted'}});
 
-	}
-	else {
-		invoices = await Revenue.find({ status: { $ne: 'deleted' } });
+	let invoices = await Revenue.find(query)
+		.sort({ status: 1, updatedAt: -1, createdAt: -1 }) // Prioritize "paid" status and sort by recent updates/creation
+		.exec();
 
-	}
-	if (invoices){
-		res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices});
-	}
-	else {
-		res.status(200).json({ responseCode: "22", responseMessage: "No invooices found."});
+	if (invoices.length > 0) {
+		res.status(200).json({
+			responseCode: "00",
+			responseMessage: "Invoices spooled successfully",
+			responseData: invoices
+		});
+	} else {
+		res.status(200).json({
+			responseCode: "22",
+			responseMessage: "No invoices found."
+		});
 	}
 });
 

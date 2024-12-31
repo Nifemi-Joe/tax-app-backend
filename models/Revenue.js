@@ -99,11 +99,7 @@ const InvoiceSchema = new Schema({
 	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid'], required: true },
 	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES', "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "CONSULTATION", "TRAINING", "LICENSE"], required: true },
 	companyName: { type: String, required: true },
-	service1: {
-		type: ServiceSchema,
-		required: [true, 'Service1 is required'],
-		default: {}
-	},
+	service1: ServiceSchema,
 	roles: [RoleSchema],
 	service2: ServiceSchema,
 	totalInvoiceFee_usd: {

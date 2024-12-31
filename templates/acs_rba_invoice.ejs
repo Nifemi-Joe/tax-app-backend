@@ -38,7 +38,7 @@
 
         .modal-content {
             background: #fff;
-            width: 90%;
+            width: 100%;
             min-height: 90vh;
             padding: 20px;
             position: relative;
@@ -209,6 +209,7 @@
 
         .table th:first-child{
             padding-left: 24px;
+            text-align: left;
         }
 
         .table td{
@@ -231,7 +232,9 @@
             border-right: 1px solid #EFF0F4;
             /*height: 40px;*/
         }
-
+        .tr-border td{
+            border-bottom: 1px solid #EFF0F4;
+        }
 
         tfoot, tfoot tr, tfoot tr td{
             background:  rgb(187, 187, 187);
@@ -260,7 +263,6 @@
             padding-right: 8px;
         }
         .w-full{
-            margin-top: 32px;
             width: 100%;
         }
         .footer-container{
@@ -322,58 +324,60 @@
 
         <div class="invoice-container">
             <div class="table-container">
-                <% if (data.service1.description) { %>
-                    <div class="table-header">AUTHENTICATION FEES FOR PERIOD: </div>
+                <% if (data.service1.transactions[0].description) { %>
+                    <div class="table-header">AUTHENTICATION FEES FOR PERIOD: <span id="periodDisplay"></span></div>
                 <% }%>
+                    <% if (data.service1.transactions[0].description){%>
                     <table class="w-full table">
-                        <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th>Volume</th>
-                            <th class="text-center">Unit Fee (<%= currency %>)</th>
-                            <th class="text-center">Total Fee (<%= currency %>)</th>
-                            <% if (currency !== 'NGN') { %>
-                                <th class="text-center">Total Fee (NGN)</th>
-                            <% } %>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <% data.service1.transactions.forEach(transaction => { %>
-                            <tr>
-                                <td><%= transaction.description %></td>
-                                <td><%= transaction.volume %></td>
-                                <td class="text-center"><%= transaction.unitfee_usd %></td>
-                                <td class="text-center"><%= transaction.totalfee_usd %></td>
-                                <% if (currency !== 'NGN') { %>
-                                    <td class="text-center"><%= transaction.totalfee_ngn %></td>
-                                <% } %>
-                            </tr>
-                        <% }) %>
-                        </tbody>
-                        <tfoot>
-                        <tr>
-                            <td colspan="3" class="font-bold italic">Sub-Total - <%= index === 0 ? 'A' : 'B' %></td>
-                            <td class="font-bold italic"><%= service.serviceTotalFeeUsd %></td>
-                            <% if (data.currency !== 'NGN') { %>
-                                <td class="font-bold italic"><%= service.serviceTotalFeeNgn %></td>
-                            <% } %>
-                        </tr>
-                        </tfoot>
+                    <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Volume</th>
+                    <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                    <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                    <% if (currency !== 'NGN') { %>
+                    <th class="text-center">Total Fee (N)</th>
+                    <% } %>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% data.service1.transactions.forEach(transaction => { %>
+                    <tr>
+                        <td><%= transaction.description %></td>
+                        <td><%= transaction.volume %></td>
+                        <td class="text-center"><%= transaction.unitfee_usd %></td>
+                        <td class="text-center"><%= transaction.totalfee_usd %></td>
+                        <% if (currency !== 'NGN') { %>
+                        <td class="text-center"><%= transaction.totalfee_ngn %></td>
+                        <% } %>
+                    </tr>
+                    <% }) %>
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <td colspan="3" class="font-bold italic">Sub-Total - A</td>
+                        <td class="font-bold italic"><%= data.service1.serviceTotalFeeUsd %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                        <td class="font-bold italic"><%= data.service1.serviceTotalFeeNgn %></td>
+                        <% } %>
+                    </tr>
+                    </tfoot>
                     </table>
+                    <% }%>
                 </div>
                     <div class="table-container">
-                        <% if (data.service2.description) { %>
-                            <div class="table-header">MONTHLY HOSTING FEE FOR PERIOD: </div>
-                        <% }%>
+                        <% if (data.service2.transactions[0].description) { %>
+                            <div class="table-header">MONTHLY HOSTING FEE FOR PERIOD: <span id="periodDisplay2"></span></div>
+
                         <table class="w-full table">
                             <thead>
                             <tr>
                                 <th>Description</th>
                                 <th>Volume</th>
-                                <th class="text-center">Unit Fee (<%= currency %>)</th>
-                                <th class="text-center">Total Fee (<%= currency %>)</th>
+                                <th class="text-center">Unit Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                                <th class="text-center">Total Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
                                 <% if (currency !== 'NGN') { %>
-                                    <th class="text-center">Total Fee (NGN)</th>
+                                    <th class="text-center">Total Fee (N)</th>
                                 <% } %>
                             </tr>
                             </thead>
@@ -392,47 +396,116 @@
                             </tbody>
                             <tfoot>
                             <tr>
-                                <td colspan="3" class="font-bold italic">Sub-Total - <%= index === 0 ? 'A' : 'B' %></td>
-                                <td class="font-bold italic"><%= service.serviceTotalFeeUsd %></td>
+                                <td colspan="3" class="font-bold italic">Sub-Total - B</td>
+                                <td class="font-bold italic"><%= data.service2.serviceTotalFeeUsd %></td>
                                 <% if (data.currency !== 'NGN') { %>
-                                    <td class="font-bold italic"><%= service.serviceTotalFeeNgn %></td>
+                                    <td class="font-bold italic"><%= data.service2.serviceTotalFeeNgn %></td>
                                 <% } %>
                             </tr>
                             </tfoot>
                         </table>
+                            <% }%>
                     </div>
+            <div class="table-container">
+                <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                    <div class="table-header">MONTHLY <%invoiceType%> FOR PERIOD: <span id="periodDisplay"></span></div>
+
+                    <table class="w-full table">
+                        <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Count</th>
+                            <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                            <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                            <% if (currency !== 'NGN') { %>
+                                <th class="text-center">Total Fee (N)</th>
+                            <% } %>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% data.roles.forEach(transaction => { %>
+                            <tr>
+                                <td><%= transaction.name %></td>
+                                <td><%= transaction.count %></td>
+                                <td class="text-center"><%= transaction.unit_fee %></td>
+                                <td class="text-center"><%= transaction.total_fee %></td>
+                                <% if (currency !== 'NGN') { %>
+                                    <td class="text-center"><%= transaction.total_fee * data.rate %></td>
+                                <% } %>
+                            </tr>
+                        <% }) %>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="3" class="font-bold italic">Sub-Total</td>
+                            <td class="font-bold italic"><%= data.totalInvoiceFee_ngn %></td>
+                            <% if (data.currency !== 'NGN') { %>
+                                <td class="font-bold italic"><%= data.totalInvoiceFee_usd %></td>
+                            <% } %>
+                        </tr>
+                        </tfoot>
+                    </table>
+                <% }%>
+            </div>
             <table class="w-full table mt-2">
                 <tbody>
-                <tr>
+                <tr class="tr-border">
                     <td colspan="4" class="font-bold">TOTAL FEE (A+B)</td>
-                    <td class="font-bold text-right"><%= data.totalInvoiceFee_usd %></td>
-                    <% if (data.currency !== 'NGN') { %>
-                        <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn %></td>
+                    <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
+                        <td class="font-bold text-right"><%= data.totalInvoiceFee_usd %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                            <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn %></td>
+                        <% } %>
                     <% } %>
+                    <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                        <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                            <td class="font-bold text-right"><%= data.totalInvoiceFee_usd %></td>
+                        <% } %>
+                    <% } %>
+
                 </tr>
-                <tr>
+                <tr class="tr-border">
                     <td colspan="4" class="font-bold">VAT</td>
-                    <td class="font-bold text-right"><%= data.totalInvoiceFeePlusVat_usd %></td>
-                    <% if (data.currency !== 'NGN') { %>
-                        <td class="font-bold text-right"><%= data.totalInvoiceFeePlusVat_ngn %></td>
+                    <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
+                        <td class="font-bold text-right"><%= (data.vat/100) * data.totalInvoiceFee_usd  %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                            <td class="font-bold text-right"><%= (data.vat/100) * data.totalInvoiceFee_ngn %></td>
+                        <% } %>
+                    <% } %>
+                    <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                        <td class="font-bold text-right"><%= (data.vat/100) * data.totalInvoiceFee_ngn %></td>
+                        <% if (data.currency !== 'NGN') { %>
+                            <td class="font-bold text-right"><%= (data.vat/100) * data.totalInvoiceFee_usd  %></td>
+                        <% } %>
                     <% } %>
                 </tr>
                 </tbody>
-                <tfoot>
-                <tr>
-                    <td colspan="6" class="font-bold">GRAND TOTAL in <%= data.currency %></td>
-                    <td class="font-bold text-right"><%= data.totalInvoiceFeePlusVat_ngn %></td>
+            </table>
+            <table class="w-full table mt-2">
+                <tr class="tr-border">
+                    <td colspan="5" class="font-bold" style="width: 80%">GRAND TOTAL in <%= data.currency %></td>
+                    <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
+                        <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.totalInvoiceFeePlusVat_usd %></td>
+                    <% } %>
+                    <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                        <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.totalInvoiceFeePlusVat_ngn %></td>
+                    <% } %>
                 </tr>
                 <% if (data.currency !== 'NGN') { %>
-                    <tr>
-                        <td colspan="6" class="font-bold">GRAND TOTAL in NGN
-                            <span>(CBN: N <%= data.rate %> /$1 as @ <%= data.transactionDate %>)</span>
+                    <tr class="tr-border">
+                        <td colspan="5" class="font-bold" style="width: 80%">GRAND TOTAL in NGN
+                            <span>(CBN: N <%= data.rate %> /$1 as @ <%= transactionDate %>)</span>
                         </td>
-                        <td class="font-bold text-right"><%= data.grandTotal_ngn %></td>
+                        <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
+                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn  %></td>
+                        <% } %>
+                        <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn %></td>
+                        <% } %>
                     </tr>
                 <% } %>
 
-                </tfoot>
             </table>
 
         </div>
@@ -458,3 +531,35 @@
 </div>
 </body>
 </html>
+<script>
+	function updatePeriodText() {
+		let date = '<%= transactionDate %>';
+		const period = '<%= data.period %>';
+		date = new Date(date)
+		let startDate, endDate;
+
+		if (period === 'monthly') {
+			// Calculate the previous month's start and end dates
+			const firstDay = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+			const lastDay = new Date(date.getFullYear(), date.getMonth(), 0);
+			startDate = firstDay.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+			endDate = lastDay.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+		} else if (period === 'quarterly') {
+			// Calculate the previous quarter's start and end dates
+			const quarterStartMonth = Math.floor((date.getMonth() - 3) / 3) * 3;
+			const firstDay = new Date(date.getFullYear(), quarterStartMonth, 1);
+			const lastDay = new Date(date.getFullYear(), quarterStartMonth + 3, 0);
+			startDate = firstDay.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+			endDate = lastDay.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+		} else if (period === 'annually') {
+			// Calculate the previous year's start and end dates
+			const firstDay = new Date(date.getFullYear() - 1, 0, 1);
+			const lastDay = new Date(date.getFullYear() - 1, 11, 31);
+			startDate = firstDay.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+			endDate = lastDay.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+		}
+		document.getElementById('periodDisplay').textContent = ` ${startDate} - ${endDate}`;
+		document.getElementById('periodDisplay2').textContent = ` ${startDate} - ${endDate}`;
+	}
+	document.addEventListener("DOMContentLoaded", updatePeriodText);
+</script>
