@@ -68,7 +68,7 @@ router.post(
 	protect,
 	[
 		check('userId', 'User ID is required').not().isEmpty(),
-		check('newPassword', 'New password must be 6 or more characters').isLength({ min: 6 })
+		check('password', 'New password must be 6 or more characters').isLength({ min: 6 })
 	],
 	resetUserPassword
 );
