@@ -395,7 +395,8 @@ exports.getProfileUser = asyncHandler(async (req, res) => {
 		 }
 
 		 // Hash the new password
-		 user.password = password;
+		 const salt = await bcrypt.genSalt(10);
+		 user.password = await bcrypt.hash(password, salt);
 		 await user.save();
 
 		 // Email HTML content
