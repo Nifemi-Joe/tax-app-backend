@@ -22,7 +22,7 @@ router.post('/', protect,authorize('superadmin', 'admin', 'frontOffice'), create
 // @desc    Update an existing invoice
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
-router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'backOffice'), validateObjectId('id'), updateInvoice);
+router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'backOffice', 'frontOffice'), validateObjectId('id'), updateInvoice);
 
 // @desc    Print an invoice as a PDF
 // @route   GET /api/revenue/printInvoice/:id

@@ -6,7 +6,8 @@ const { generatePDF, pdfGenerate} = require('../utils/pdfGenerator'); // Utility
 const { check, validationResult } = require('express-validator');
 const path = require('path');
 const jsPDF = require('jspdf');
-const fs = require("fs");
+const { PDFDocument } = require('pdf-lib');
+const fs = require('fs');
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const asyncHandler = require('express-async-handler');
@@ -186,7 +187,9 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Currency:</strong> ${invoiceData.currency}</li>
-              <li><strong>Payment Date:</strong> ${new Date().toLocaleDateString()}</li>
+              <li><strong>Payment Date:</strong> ${new Date(invoiceData.paymentDate).toLocaleDateString()}</li>
+              <li><strong>Issue Date:</strong> ${new Date(invoiceData.transactionDate).toLocaleDateString()}</li>
+              <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
             <p>Thank you for your prompt payment. ${role === 'client' ? 'We appreciate your continued business.' : ''}</p>
             ${role !== 'client' ? '<p>You can view the updated invoice details in the application.</p>' : ''}
@@ -199,6 +202,69 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
       </body>
     </html>
   `;
+	return emailContent;
+};
+
+const generateEmailRejectedContent = (role, invoiceData, client) => {
+	let emailContent = `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600&display=swap" rel="stylesheet">
+        <title>Invoice Status Update</title>
+        <style>
+          body { font-family: "Outfit" !important; sans-serif; background-color: #f9f9f9; color: #333; margin: 0; padding: 0; }
+          .email-container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+          .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
+          .content { padding: 20px; line-height: 1.6; font-family: "Outfit" !important;}
+          .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+          .button { padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none; }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <h1>Invoice Status Update</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${client.name},</p>
+            <p>We would like to inform you that Invoice ${invoiceData.invoiceNo} has been updated. Below are the updated invoice details:</p>
+            <ul>
+              <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
+              <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
+              <li><strong>Client:</strong> ${client.name}</li>
+              <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
+              <li><strong>Currency:</strong> ${invoiceData.currency}</li>
+              <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
+            </ul>
+
+            <h3>Reason for Rejection:</h3>
+            <p>${invoiceData.rejectionReason}</p>
+
+            <h3>Instructions:</h3>
+            <p>Please click the button below to login.</p>
+            <a href="https://cheerful-cendol-19cd82.netlify.app/" class="button">Login</a>
+
+            <p>If you need any assistance, feel free to contact our support team.</p>
+            <p>Best Regards,<br>GSJX LTD Team</p>
+          </div>
+          <div class="footer">
+            <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+	// Modify content for client-specific emails
+	if (role === 'client') {
+		emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
+		emailContent = emailContent.replace('<span>Update Invoice</span>', '')
+	}
+
 	return emailContent;
 };
 
@@ -374,14 +440,28 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	let formatDate = new Date(transactionDate).toLocaleDateString();
 	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
 	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj}, "acs_rba_invoice.ejs")
+	const mergedPdf = await PDFDocument.create();
+	const pdf1 = await PDFDocument.load(pdfInvoice);
+	const pdf2 = await PDFDocument.load(pdf);
+	const pdf1Pages = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
+	pdf1Pages.forEach((page) => mergedPdf.addPage(page));
+
+	const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
+	pdf2Pages.forEach((page) => mergedPdf.addPage(page));
+
+	const mergedPdfBytes = await mergedPdf.save();
+	const attachment = {
+		filename: "Invoice.pdf",
+		content: Buffer.from(mergedPdfBytes),
+	};
 	existingClient.email.forEach((person)=> {
-		sendEmail(person, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
+		sendEmail(person, 'Invoice Created', emailContentClient, "",[attachment]);
 	})
-	sendEmail(user.email, 'Invoice Created', emailContentClient, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
+	sendEmail(user.email, 'Invoice Created', emailContentClient, "",[attachment]);
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
 		const emailContentAdmin = generateEmailContent('admin', combinedObj, existingClient);
-		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[{filename: "AccountDetails.pdf", content: pdf}, {filename: "Invoice.pdf", content: pdfInvoice}]);
+		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[attachment]);
 	});
 	// // Render the invoice template
 	// const invoiceHTML = path.resolve(__dirname, `../templates/${invoiceType.toLowerCase()}_invoice.html`);
@@ -419,8 +499,25 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			return res.status(404).json({ success: false, responseCode: "22",
 				responseMessage: 'Invoice not found' });
 		}
+		if (updatedInvoice.status === "rejected" && user.role === "backOffice"){
+			const backofficeEmails = await User.find({ role: { $in: ['frontOffice'] } });
+			backofficeEmails.forEach(user => {
+				const emailContentAdmin = generateEmailRejectedContent('admin', updatedInvoice, existingClient);
+				sendEmail(user.email, 'Invoice Rejected', emailContentAdmin, "");
+			});
+			return res.status(200).json({
+				responseCode: "00",
+				responseMessage: "Invoice updated successfully",
+				responseData: updatedInvoice
+			});
+		}
 		let newDate = new Date(updatedInvoice.transactionDate);
 		newDate.setDate(newDate.getDate() + 14);
+		const totalInvoiceFeePlusVat_usd = updatedInvoice.totalInvoiceFee_usd + (updatedInvoice.totalInvoiceFee_usd * updatedInvoice.vat / 100);
+		const totalInvoiceFeePlusVat_ngn = updatedInvoice.totalInvoiceFee_ngn + (updatedInvoice.totalInvoiceFee_ngn * updatedInvoice.vat / 100);
+		updatedInvoice.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn
+		updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd
+		updatedInvoice.save();
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
 		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
 		if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
@@ -442,15 +539,29 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
 			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice}, "acs_rba_invoice.ejs")
-			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+			const mergedPdf = await PDFDocument.create();
+			const pdf1 = await PDFDocument.load(pdfInvoice);
+			const pdf2 = await PDFDocument.load(pdf);
+			const pdf1Pages = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
+			pdf1Pages.forEach((page) => mergedPdf.addPage(page));
+
+			const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
+			pdf2Pages.forEach((page) => mergedPdf.addPage(page));
+
+			const mergedPdfBytes = await mergedPdf.save();
+			const attachment = {
+				filename: "Invoice.pdf",
+				content: Buffer.from(mergedPdfBytes),
+			};
+			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
 			existingClient.email.forEach((person)=> {
-				sendEmail(person, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+				sendEmail(person, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
 			})
-			sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+			sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
 				const emailContentAdmin = generateCompleteEmailContent('admin', updatedInvoice, existingClient);
-				sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+				sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [attachment]);
 			});
 
 			await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
@@ -465,16 +576,30 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		await recalculateClientTotals(updatedInvoice.clientId);
 
 		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice}, "acs_rba_invoice.ejs")
+		const mergedPdf = await PDFDocument.create();
+		const pdf1 = await PDFDocument.load(pdfInvoice);
+		const pdf2 = await PDFDocument.load(pdf);
+		const pdf1Pages = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
+		pdf1Pages.forEach((page) => mergedPdf.addPage(page));
+
+		const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
+		pdf2Pages.forEach((page) => mergedPdf.addPage(page));
+
+		const mergedPdfBytes = await mergedPdf.save();
+		const attachment = {
+			filename: "Invoice.pdf",
+			content: Buffer.from(mergedPdfBytes),
+		};
 		// Send notifications
 		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
 		existingClient.email.forEach((person)=> {
-			sendEmail(person, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+			sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
 		})
-		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [{ filename: "AccountDetails.pdf", content: pdf  }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [attachment]);
 		const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 		backofficeEmails.forEach(user => {
 			const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
-			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [{ filename: "AccountDetails.pdf", content: pdf }, { filename: "Invoice.pdf", content: pdfInvoice }]);
+			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
 		});
 
 		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
