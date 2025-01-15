@@ -9,10 +9,9 @@ const nodemailer = require('nodemailer');
 // @route   POST /api/vats
 // @access  Private (e.g., Admin)
 exports.createVAT = asyncHandler(async (req, res) => {
-	console.log(req.user)
 
 	// Validation
-	await check('value', 'VAT value is required and must be a positive number')
+	await check('value', 'Tax value is required and must be a positive number')
 		.isFloat({ min: 0 })
 		.run(req);
 
@@ -31,7 +30,7 @@ exports.createVAT = asyncHandler(async (req, res) => {
 	if (vat) {
 		res.status(201).json({
 			responseCode: "00",
-			responseMessage: "VAT rate created successfully!",
+			responseMessage: "Tax rate created successfully!",
 			responseData: vat
 		});
 	} else {

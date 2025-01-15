@@ -5,14 +5,19 @@ const vatSchema = new Schema(
 	{
 		value: {
 			type: Number,
-			required: [true, 'VAT value is required'],
-			min: [0, 'VAT value cannot be negative'],
+			required: [true, 'Tax value is required'],
+			min: [0, 'Tax value cannot be negative'],
 			set: (value) => parseFloat(value.toFixed(2)), // Ensure the VAT value is rounded to 2 decimal places
 		},
 		status: {
 			type: String,
 			enum: ['active', 'inactive'],
 			default: 'active',
+		},
+		type: {
+			type: String,
+			enum: ['VAT', 'WHT'],
+			default: 'WHT',
 		},
 		inactiveReason: {
 			type: String,
