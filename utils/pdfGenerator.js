@@ -3,7 +3,7 @@ const pdf = require('pdfkit');
 const handlebars = require('handlebars');
 const path = require('path')
 const ejs = require('ejs');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {
@@ -15,8 +15,12 @@ async function generatePDF(templatePath, invoiceData) {
 
 		// Launch Puppeteer with custom Chromium executable
 		const browser = await puppeteer.launch({
-			executablePath: '/usr/bin/chromium', // Path to Chrome/Chromium
-			headless: true,
+			executablePath: process.platform === 'darwin'
+				? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS path
+				: process.platform === 'win32'
+					? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'   // Windows path
+					: '/usr/bin/google-chrome-stable',                                // Linux path
+			args: ['--no-sandbox', '--disable-setuid-sandbox'], // Essential for some server environments
 		});
 
 		const page = await browser.newPage();
