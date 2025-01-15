@@ -3,7 +3,7 @@ const pdf = require('pdfkit');
 const handlebars = require('handlebars');
 const path = require('path')
 const ejs = require('ejs');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {
@@ -14,13 +14,17 @@ async function generatePDF(templatePath, invoiceData) {
 		const htmlContent = await ejs.renderFile(templatePath, { data: invoiceData });
 
 		// Launch Puppeteer with custom Chromium executable
-		const browser = await puppeteer.launch({
-			executablePath: process.platform === 'darwin'
-				? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS path
+		const chromePath =
+			process.platform === 'darwin'
+				? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS
 				: process.platform === 'win32'
-					? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'   // Windows path
-					: '/usr/bin/google-chrome-stable',                                // Linux path
-			args: ['--no-sandbox', '--disable-setuid-sandbox'], // Essential for some server environments
+					? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' // Windows
+					: '/usr/bin/google-chrome-stable'; // Linux
+
+		// Launch Puppeteer with the custom Chrome executable
+		const browser = await puppeteer.launch({
+			executablePath: chromePath,
+			args: ['--no-sandbox', '--disable-setuid-sandbox'], // Required for some environments
 		});
 
 		const page = await browser.newPage();
