@@ -18,6 +18,7 @@ const vatSchema = new Schema(
 			type: String,
 			enum: ['VAT', 'WHT'],
 			default: 'WHT',
+			required: true
 		},
 		inactiveReason: {
 			type: String,

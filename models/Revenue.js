@@ -7,6 +7,11 @@ const ServiceSchema = new Schema({
 	description: String,
 	date: Date,
 	name: String,
+	cbnratedate: {
+		type: Date,
+		required: true,
+		default: Date.now()
+	},
 	transactions: [{
 		id: String,
 		description: String,

@@ -44,7 +44,6 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 	await check('surname', 'Surname is required').notEmpty().run(req);
 	await check('email', 'A valid email is required').isEmail().run(req);
 	await check('position', 'Position is required').notEmpty().run(req);
-	await check('salary', 'Salary must be a positive number').isFloat({ min: 0 }).run(req);
 
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
@@ -193,9 +192,10 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		admins.forEach(async (admin) => {
 			await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
 		})
-		res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
+		await logAction(req.user._id || "Admin", user.name || user.firstname + " " + user.lastname, 'created_employee', "Employee Management", `Created employee ${email} by ${req.user.email}`, req.body.ip )
+		return res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
 	}
-	else if (!existingUser && !existingEmployee){
+	else if (!existingUser && !existingEmployee) {
 		const newuser = await User.create({
 			firstname,
 			lastname: surname,
@@ -338,7 +338,8 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		admins.forEach(async (admin) => {
 			await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
 		})
-		res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
+		await logAction(req.user._id || "Admin", user.name || user.firstname + " " + user.lastname, 'created_employee', "Employee Management", `Created employee ${email} by ${req.user.email}`, req.body.ip )
+		return res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
 	}
 });
 // @desc    Update employee details
@@ -462,7 +463,7 @@ exports.getInactiveEmployees = asyncHandler(async (req, res) => {
 // @route   GET /api/employees
 // @access  Private
 exports.getAllEmployees = asyncHandler(async (req, res) => {
-	const employees = await Employee.find({ status: { $ne: 'deleted'} });
+	const employees = await Employee.find({ status: { $ne: 'deleted'} }).sort({ createdAt: -1, updatedAt: -1 });;
 	if (employees){
 		res.status(200).json({
 			responseCode: "00",

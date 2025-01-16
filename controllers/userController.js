@@ -655,7 +655,7 @@ exports.registerUser = asyncHandler(async (req, res) => {
 
 
 exports.getUsers = asyncHandler(async (req, res) => {
-	const users = await User.find();
+	const users = await User.find().sort({ createdAt: -1, updatedAt: -1 });;
 	if (users){
 		res.status(200).json({
 			responseCode: "00",

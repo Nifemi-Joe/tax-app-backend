@@ -5,6 +5,11 @@ const rateSchema = new mongoose.Schema({
 		type: Number,
 		required: true,
 	},
+	cbnratedate: {
+		type: Date,
+		required: true,
+		default: Date.now()
+	},
 	status: {
 		type: String,
 		default: 'active',

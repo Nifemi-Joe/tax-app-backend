@@ -52,7 +52,6 @@ const employeeSchema = new Schema({
 	},
 	salary: {
 		type: Number,
-		required: true,
 		min: 0
 	},
 	status: {
