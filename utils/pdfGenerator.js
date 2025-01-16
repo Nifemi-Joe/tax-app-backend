@@ -3,7 +3,7 @@ const pdf = require('pdfkit');
 const handlebars = require('handlebars');
 const path = require('path')
 const ejs = require('ejs');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {

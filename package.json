@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "postinstall": "npx puppeteer install  && apt-get update && apt-get install -y chromium libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libgdk-pixbuf2.0-0 libnspr4 libnss3 libxss1 libasound2",
+    "postinstall": "npx puppeteer browsers install chrome && npx puppeteer install  && apt-get update && apt-get install -y chromium libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libgdk-pixbuf2.0-0 libnspr4 libnss3 libxss1 libasound2",
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
