@@ -53,13 +53,22 @@ const pdfGenerate = async (data, file) => {
 	try {
 		const templatePath = path.join(__dirname, '../templates', file);
 
-		console.log(templatePath)
+		console.log(templatePath);
+
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
-		const browser = await puppeteer.launch();
-		const page = await browser.newPage();
+		// Define the correct executable path for Puppeteer
+		const browser = await puppeteer.launch({
+			executablePath: process.platform === 'darwin'
+				? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS
+				: process.platform === 'win32'
+					? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' // Windows
+					: '/usr/bin/google-chrome-stable', // Linux
+			args: ['--no-sandbox', '--disable-setuid-sandbox'], // For secure environments
+		});
 
+		const page = await browser.newPage();
 		await page.setContent(html);
 		const pdf = await page.pdf({
 			format: 'A4',
