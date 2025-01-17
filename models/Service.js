@@ -13,10 +13,6 @@ const serviceSchema = new mongoose.Schema({
 		trim: true,
 		maxlength: [500, 'Description cannot be more than 500 characters']
 	},
-	price: {
-		type: Number,
-		min: [0, 'Price must be a positive number']
-	},
 	category: {
 		type: String,
 		enum: ['Consulting', 'Development', 'Design', 'Support', 'Other'],
@@ -32,16 +28,10 @@ const serviceSchema = new mongoose.Schema({
 	deletedBy: {
 		type: String,
 	},
-	duration: {
-		type: String,
-		trim: true,
-		maxlength: [100, 'Duration cannot be more than 100 characters']
-	},
 	available: {
 		type: Boolean,
 		default: true
 	},
-	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Belongs to a company
 	imageUrl: {
 		type: String,
 		trim: true,

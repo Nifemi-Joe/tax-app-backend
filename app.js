@@ -53,6 +53,7 @@ app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/tax', require('./routes/taxRoutes'));
 app.use('/api/rate', require('./routes/rateRoutes'));
 app.use('/api/vat',  require('./routes/vatRoutes'));
+app.use('/api/services',  require('./routes/serviceRoutes'));
 app.use('/api/company',  require('./routes/companyRoutes'));
 app.use('/api/accounts', require("./routes/accountRoutes"));
 app.use('/api/audit',  require('./routes/auditLogRoutes'));

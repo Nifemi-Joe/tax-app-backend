@@ -6,16 +6,17 @@ const { sendEmail } = require('../utils/emailService');
 const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
 const path = require('path');
+const logAction = require("../utils/auditLogger");
 
 // @desc    Get all services
 // @route   GET /api/services
 // @access  Private
 exports.getAllServices = asyncHandler(async (req, res) => {
 	try {
-		const services = await Service.find().populate('client');
-		res.status(200).json({ success: true, data: services });
+		const services = await Service.find();
+		res.status(200).json({ responseCode: "00", responseMessage: "Completed successfully", responseData: services });
 	} catch (error) {
-		res.status(500).json({ success: false, error: 'Server Error' });
+		res.status(500).json({ responseCode: "00", responseMessage: 'Something went wrong', errror });
 	}
 });
 
@@ -36,9 +37,7 @@ exports.getServiceById = asyncHandler(async (req, res) => {
 // @route   POST /api/services
 // @access  Private
 exports.createService = asyncHandler(async (req, res) => {
-	await check('client', 'Client is required').notEmpty().run(req);
 	await check('serviceType', 'Service type is required').notEmpty().run(req);
-	await check('details', 'Service details are required').notEmpty().run(req);
 
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
@@ -63,15 +62,13 @@ exports.createService = asyncHandler(async (req, res) => {
 		});
 
 		// Generate invoice PDF based on service type
-		const invoiceHTML = `../templates/${serviceType.toLowerCase()}_invoice.html`; // Path to HTML template
-		const invoicePDF = await generatePDF(invoiceHTML, newRevenue);
+
 
 		// Send invoice via email
-		await sendEmail(existingClient.email, 'Your Invoice', 'Please find attached your invoice.', invoicePDF);
-
-		res.status(201).json({ success: true, data: newService });
+		await logAction(req.user._id || "Admin", req.user.name || req.user.fistname + " " + req.user.lastname,'created_sevice', "Service Management", `Created service ${email} by ${req.user.email}`, req.body.ip )
+		res.status(201).json({ responseCode: "00", responseMessage: "Completed successfully.", responseData: newService });
 	} catch (error) {
-		res.status(500).json({ success: false, error: 'Server Error' });
+		res.status(500).json({ responseCode: "22", responseMessage: "Something went wrong", error });
 	}
 });
 

@@ -59,15 +59,7 @@ const pdfGenerate = async (data, file) => {
 		const html = await ejs.renderFile(templatePath, data);
 
 		// Define the correct executable path for Puppeteer
-		const browser = await puppeteer.launch({
-			executablePath: process.platform === 'darwin'
-				? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS
-				: process.platform === 'win32'
-					? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' // Windows
-					: '/usr/bin/google-chrome-stable', // Linux
-			args: ['--no-sandbox', '--disable-setuid-sandbox'], // For secure environments
-		});
-
+		const browser = await puppeteer.launch();
 		const page = await browser.newPage();
 		await page.setContent(html);
 		const pdf = await page.pdf({

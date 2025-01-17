@@ -537,7 +537,7 @@
                 <% if (data.currency !== 'NGN') { %>
                     <tr class="tr-border">
                         <td colspan="5" class="font-bold" style="width: 80%">GRAND TOTAL in NGN
-                            <span>(CBN: N <%= data.rate %> /$1 as @ <%= data.cbnratedate.toLocaleDateString() %>)</span>
+                            <span>(CBN: N <%= data.rate %> /$1 as @ <%= new Date(data.cbnratedate).toLocaleDateString() %>)</span>
                         </td>
                         <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
                             <td class="font-bold text-right" style="width: 20%; text-align: right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn  %></td>
