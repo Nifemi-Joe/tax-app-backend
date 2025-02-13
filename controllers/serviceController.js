@@ -16,7 +16,7 @@ exports.getAllServices = asyncHandler(async (req, res) => {
 		const services = await Service.find();
 		res.status(200).json({ responseCode: "00", responseMessage: "Completed successfully", responseData: services });
 	} catch (error) {
-		res.status(500).json({ responseCode: "00", responseMessage: 'Something went wrong', errror });
+		res.status(202).json({ responseCode: "00", responseMessage: 'Something went wrong', error });
 	}
 });
 
