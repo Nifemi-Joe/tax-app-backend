@@ -59,13 +59,12 @@ const pdfGenerate = async (data, file) => {
 		const html = await ejs.renderFile(templatePath, data);
 
 		// Define the correct executable path for Puppeteer
-		const browser = await puppeteer.launch();
+		const browser = await puppeteer.launch({
+			args: ['--no-sandbox', '--disable-setuid-sandbox'], // CRITICAL for Render
+			headless: 'new' // or headless: true (try both)
+		});
 		const page = await browser.newPage();
 		await page.setContent(html);
-		const pdf = await page.pdf({
-			format: 'A4',
-			printBackground: true,
-		});
 
 		await browser.close();
 		return pdf;
