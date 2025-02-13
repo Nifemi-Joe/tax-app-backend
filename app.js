@@ -18,8 +18,13 @@ const port = process.env.PORT || 3009;
 
 
 const corsOptions = {
-	origin: 'http://localhost:3000/', // Allow requests from this origin
+	origin: 'https://cheerful-cendol-19cd82.netlify.app', // Allow requests from your frontend
+	methods: 'GET,POST,PUT,DELETE', // Allowed HTTP methods
+	credentials: true, // Allow credentials (cookies, authorization headers)
+	allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
 };
+
+app.use(cors(corsOptions))
 
 app.use(cors({
 	origin: '*',
