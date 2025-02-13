@@ -51,7 +51,7 @@ async function generatePDF(templatePath, invoiceData) {
 
 const pdfGenerate = async (data, file) => {
 	try {
-		const templatePath = path.join(__dirname, '../templates', file);
+		const templatePath = path.join(process.cwd(), '../templates', file);
 
 		console.log(templatePath);
 

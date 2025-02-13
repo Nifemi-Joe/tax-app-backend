@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
+    "install": "apt-get update && apt-get install -y chromium",
     "postinstall": "npx puppeteer browsers install chrome",
     "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
