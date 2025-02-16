@@ -3,7 +3,6 @@ const pdf = require('pdfkit');
 const browserless = require('browserless');
 const path = require('path')
 const ejs = require('ejs');
-const puppeteer = require('puppeteer');
 
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {
@@ -13,34 +12,9 @@ async function generatePDF(templatePath, invoiceData) {
 		// Render the EJS template with the invoice data
 		const htmlContent = await ejs.renderFile(templatePath, { data: invoiceData });
 
-		// Launch Puppeteer with custom Chromium executable
-		const chromePath =
-			process.platform === 'darwin'
-				? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' // macOS
-				: process.platform === 'win32'
-					? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' // Windows
-					: '/usr/bin/google-chrome-stable'; // Linux
-
-		// Launch Puppeteer with the custom Chrome executable
-		const browser = await puppeteer.launch({
-			executablePath: chromePath,
-			args: ['--no-sandbox', '--disable-setuid-sandbox'], // Required for some environments
-		});
-
-		const page = await browser.newPage();
-		await page.setContent(htmlContent);
-
-		// Generate PDF options
-		const pdfBuffer = await page.pdf({
-			format: 'A4',
-			printBackground: true,
-		});
-
-		await browser.close();
 
 		// Save the PDF file
 		const pdfFilePath = `/Users/mac/Downloads/generated-invoice.pdf`;
-		fs.writeFileSync(pdfFilePath, pdfBuffer);
 
 		return pdfFilePath; // Return file path or buffer
 	} catch (error) {
