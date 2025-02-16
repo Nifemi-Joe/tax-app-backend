@@ -1,6 +1,6 @@
 const fs = require('fs');
 const pdf = require('pdfkit');
-const handlebars = require('handlebars');
+const browserless = require('browserless');
 const path = require('path')
 const ejs = require('ejs');
 const puppeteer = require('puppeteer');
@@ -51,23 +51,22 @@ async function generatePDF(templatePath, invoiceData) {
 
 const pdfGenerate = async (data, file) => {
 	try {
-		const templatePath = path.join(process.cwd(), '../templates', file);
-
-		console.log(templatePath);
+		const templatePath = path.join(__dirname, '../templates', file);
 
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
-		// Define the correct executable path for Puppeteer
-		const browser = await puppeteer.launch({
-			args: ['--no-sandbox', '--disable-setuid-sandbox'], // CRITICAL for Render
-			headless: 'new' // or headless: true (try both)
+		// Create a browserless instance
+		const browser = browserless({
+			token: process.env.BROWSERLESS_API_KEY, // Use the API key from the environment variable
 		});
-		const page = await browser.newPage();
-		await page.setContent(html);
+		const buffer = await browser.pdf(html, {
+			format: 'A4',
+			printBackground: true,
+		});
 
 		await browser.close();
-		return pdf;
+		return buffer;
 	} catch (error) {
 		throw new Error('Error generating PDF: ' + error.message);
 	}
