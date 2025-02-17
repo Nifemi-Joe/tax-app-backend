@@ -34,14 +34,14 @@ const pdfGenerate = async (data, file) => {
 		return new Promise((resolve, reject) => {
 			pdf.create(html, options).toBuffer((err, buffer) => {
 				if (err) {
-					reject(new Error('Error generating PDF: ' + err.message));
+					reject(new Error('Error generating PDFssss: ' + err.message));
 				} else {
 					resolve(buffer);
 				}
 			});
 		});
 	} catch (error) {
-		throw new Error('Error generating PDF: ' + error.message);
+		throw new Error('Error generating PDFsss: ' + error.message);
 	}
 };
 
