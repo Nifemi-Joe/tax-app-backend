@@ -1,6 +1,5 @@
 const fs = require('fs');
-const pdf = require('html-pdf');
-const path = require('path')
+const path = require('path');
 const ejs = require('ejs');
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {
@@ -23,23 +22,18 @@ const pdfGenerate = async (data, file) => {
 		console.log(data);
 		console.log(file);
 		console.log(templatePath)
+
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
 		// PDF options
-		const options = { format: 'A4', orientation: 'portrait', border: '10mm' };
+		const options = { format: 'A4', orientation: 'portrait', border: '10mm', timeout: 90000 };
 
-		return new Promise((resolve, reject) => {
-			pdf.create(html, options).toBuffer((err, buffer) => {
-				if (err) {
-					reject(new Error('Error generating PDFssss: ' + err.message));
-				} else {
-					resolve(buffer);
-				}
-			});
-		});
+		// Generate PDF with html-pdf-node
+		const pdfBuffer = await htmlPdf.generatePdf({ content: html }, options);
+		return pdfBuffer;
 	} catch (error) {
-		throw new Error('Error generating PDFsss: ' + error.message);
+		throw new Error('Error generating PDF: ' + error.message);
 	}
 };
 
