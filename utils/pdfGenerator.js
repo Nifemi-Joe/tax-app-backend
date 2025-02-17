@@ -1,9 +1,7 @@
 const fs = require('fs');
-const pdf = require('pdfkit');
-const browserless = require('browserless');
+const pdf = require('html-pdf');
 const path = require('path')
 const ejs = require('ejs');
-
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {
 	try {
@@ -30,17 +28,18 @@ const pdfGenerate = async (data, file) => {
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
-		// Create a browserless instance
-		const browser = browserless({
-			token: process.env.BROWSERLESS_API_KEY, // Use the API key from the environment variable
-		});
-		const buffer = await browser.pdf(html, {
-			format: 'A4',
-			printBackground: true,
-		});
+		// PDF options
+		const options = { format: 'A4', orientation: 'portrait', border: '10mm' };
 
-		await browser.close();
-		return buffer;
+		return new Promise((resolve, reject) => {
+			pdf.create(html, options).toBuffer((err, buffer) => {
+				if (err) {
+					reject(new Error('Error generating PDF: ' + err.message));
+				} else {
+					resolve(buffer);
+				}
+			});
+		});
 	} catch (error) {
 		throw new Error('Error generating PDF: ' + error.message);
 	}
