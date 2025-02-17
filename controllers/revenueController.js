@@ -391,12 +391,10 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Create invoice record
 	const newInvoice = new Revenue(invoiceData);
 	const savedInvoice = await newInvoice.save();
-
 	const totalInvoices = await Revenue.aggregate([
 		{ $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
 		{ $group: { _id: null, clientTotalInvoice: { $sum: "$amountDue" } } }
 	]);
-
 	// Update the client's total invoice amount
 	existingClient.clientTotalInvoice = totalInvoices[0]?.clientTotalInvoice || 0;
 	await recalculateClientTotals(invoiceData.clientId);
@@ -435,7 +433,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	await whtEntity.save();
 	const existingTax = await Tax.findOne({clientId: clientIdd});
 	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
-	console.log(combinedObj)
 	const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
 	let formatDate = new Date(transactionDate).toLocaleDateString();
 	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
@@ -448,7 +445,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 
 	const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
 	pdf2Pages.forEach((page) => mergedPdf.addPage(page));
-
 	const mergedPdfBytes = await mergedPdf.save();
 	const attachment = {
 		filename: "Invoice.pdf",

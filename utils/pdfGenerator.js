@@ -5,12 +5,8 @@ const ejs = require('ejs');
 const htmlPdf = require('html-pdf-node');
 async function generatePDF(templatePath, invoiceData) {
 	try {
-		console.log(invoiceData); // Check if it contains invoiceNumber, name, etc.
-
 		// Render the EJS template with the invoice data
 		const htmlContent = await ejs.renderFile(templatePath, { data: invoiceData });
-
-
 		// Save the PDF file
 		const pdfFilePath = `/Users/mac/Downloads/generated-invoice.pdf`;
 
@@ -24,7 +20,9 @@ async function generatePDF(templatePath, invoiceData) {
 const pdfGenerate = async (data, file) => {
 	try {
 		const templatePath = path.join(__dirname, '../templates', file);
-
+		console.log(data);
+		console.log(file);
+		console.log(templatePath)
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
