@@ -435,20 +435,12 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
 	const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
 	let formatDate = new Date(transactionDate).toLocaleDateString();
-	const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
-	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj}, "acs_rba_invoice.ejs")
-	const mergedPdf = await PDFDocument.create();
-	const pdf1 = await PDFDocument.load(pdfInvoice);
-	const pdf2 = await PDFDocument.load(pdf);
-	const pdf1Pages = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
-	pdf1Pages.forEach((page) => mergedPdf.addPage(page));
-
-	const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
-	pdf2Pages.forEach((page) => mergedPdf.addPage(page));
-	const mergedPdfBytes = await mergedPdf.save();
+	// const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
+	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 	const attachment = {
 		filename: "Invoice.pdf",
-		content: Buffer.from(mergedPdfBytes),
+		content: pdfInvoice,
+		contentType: "application/pdf"
 	};
 	existingClient.email.forEach((person)=> {
 		sendEmail(person, 'Invoice Created', emailContentClient, "",[attachment]);
