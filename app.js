@@ -6,7 +6,6 @@ const cron = require('node-cron');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
-const path = require('path');
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
 const {generatePDF} = require("./utils/pdfGenerator");
 const {getInvoiceData} = require("./controllers/revenueController")
@@ -42,10 +41,6 @@ mongoose.connect(process.env.MONGO_URI, {
 }).catch(err => {
 	console.error('Error connecting to MongoDB', err);
 });
-app.set('views', path.join(__dirname, 'templates'));
-
-// Set the view engine (assuming you're using EJS)
-app.set('view engine', 'ejs');
 
 
 // Routes
