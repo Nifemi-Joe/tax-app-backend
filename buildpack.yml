@@ -1,2 +1,0 @@
-buildpacks:
-  - https://github.com/render-examples/puppeteer-buildpack
