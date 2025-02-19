@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const ejs = require('ejs');
 const PDFDocument = require('pdfkit');
+const puppeteer = require('puppeteer');
 async function generatePDF(templatePath, invoiceData) {
 	try {
 		// Render the EJS template with the invoice data
@@ -21,16 +22,24 @@ const pdfGenerate = async (data, file) => {
 		const templatePath = path.join(__dirname, '../templates', file);
 		console.log(data);
 		console.log(file);
-		console.log(templatePath)
+		console.log(templatePath);
 
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
-		// PDF options
-		const doc = new PDFDocument();
-		doc.pipe(fs.createWriteStream('Invoice.pdf'));
-		doc.text(html);  // Render plain text (not HTML)
-		doc.end();
+		// Launch puppeteer to generate PDF
+		const browser = await puppeteer.launch();
+		const page = await browser.newPage();
+
+		// Set the content of the page to the rendered HTML
+		await page.setContent(html);
+		await page.emulateMediaType('screen'); // Optional: sets print style if defined
+
+		// Create the PDF
+		const pdfBuffer = await page.pdf({ format: 'A4' });
+
+		await browser.close();
+		return pdfBuffer; // Return the generated PDF buffer
 	} catch (error) {
 		throw new Error('Error generating PDF: ' + error.message);
 	}
