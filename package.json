@@ -19,6 +19,7 @@
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
+    "cjs-loader": "^0.1.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "debug": "^4.4.0",
