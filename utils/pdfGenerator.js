@@ -27,8 +27,13 @@ const pdfGenerate = async (data, file) => {
 		// Render the EJS template with the invoice data
 		const html = await ejs.renderFile(templatePath, data);
 
-		// Launch puppeteer to generate PDF
-		const browser = await puppeteer.launch();
+		// Launch puppeteer with specific options for Render
+		const browser = await puppeteer.launch({
+			headless: true,
+			args: ['--no-sandbox', '--disable-setuid-sandbox'],
+			executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/Chromium.app/Contents/MacOS/Chromium', // Use Chromium on Render
+		});
+
 		const page = await browser.newPage();
 
 		// Set the content of the page to the rendered HTML
