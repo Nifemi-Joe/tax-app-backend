@@ -11,3 +11,4 @@ Chromium.app/Contents/Frameworks/Chromium[[:space:]]Framework.framework/Chromium
 Chromium.app filter=lfs diff=lfs merge=lfs -text
 *.app filter=lfs diff=lfs merge=lfs -text
 Chromium.app/Contents/Frameworks/Chromium[[:space:]]Framework.framework filter=lfs diff=lfs merge=lfs -text
+Chromium.app/Contents/Frameworks/ChromiumFramework.framework/ChromiumFramework filter=lfs diff=lfs merge=lfs -text
