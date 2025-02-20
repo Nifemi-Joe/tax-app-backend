@@ -31,7 +31,7 @@ const pdfGenerate = async (data, file) => {
 		const browser = await puppeteer.launch({
 			headless: true,
 			args: ['--no-sandbox', '--disable-setuid-sandbox'],
-			executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/Chromium.app/Contents/MacOS/Chromium', // Use Chromium on Render
+			executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium', // Use Chromium on Render
 		});
 
 		const page = await browser.newPage();
