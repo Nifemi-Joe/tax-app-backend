@@ -16,7 +16,7 @@ const port = process.env.PORT || 8080;
 
 
 const corsOptions = {
-	origin: 'http://localhost:3008', // Allow requests from your frontend
+	origin: '*', // Allow requests from your frontend
 	methods: 'GET,POST,PUT,DELETE', // Allowed HTTP methods
 	credentials: true, // Allow credentials (cookies, authorization headers)
 	allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
