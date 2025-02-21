@@ -16,7 +16,7 @@ const port = process.env.PORT || 8080;
 
 
 const corsOptions = {
-	origin: '*', // Allow requests from your frontend
+	origin: 'http://localhost:3008', // Allow requests from your frontend
 	methods: 'GET,POST,PUT,DELETE', // Allowed HTTP methods
 	credentials: true, // Allow credentials (cookies, authorization headers)
 	allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
@@ -24,15 +24,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions))
 
-app.use(cors({
-	origin: '*',
-	methods: 'GET,POST,PUT,DELETE',
-	credentials: true
-}));
 // Middleware
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -56,6 +52,11 @@ app.use('/api/services',  require('./routes/serviceRoutes'));
 app.use('/api/company',  require('./routes/companyRoutes'));
 app.use('/api/accounts', require("./routes/accountRoutes"));
 app.use('/api/audit',  require('./routes/auditLogRoutes'));
+
+app.get('/test', (req, res) => {
+	res.send('Hello from the test endpoint!');
+});
+
 app.get('/download-invoice/:invoiceNo', async (req, res) => {
 	try {
 		const invoiceNo = req.params.invoiceNo;
