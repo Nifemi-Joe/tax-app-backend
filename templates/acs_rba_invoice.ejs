@@ -164,6 +164,9 @@
             margin: 32px auto 0;
             border-radius: 4px;
         }
+        th, td, tr, thead, tfoot, span{
+            font-size: 10px;
+        }
         .date-container{
             margin: 20px auto 0;
             display: flex;
@@ -419,7 +422,7 @@
                 </div>
                     <div class="table-container">
                         <% if ((data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") && data.service2.transactions[0].description) { %>
-                            <div class="table-header">MONTHLY HOSTING FEE FOR PERIOD: <span id="periodDisplay2"></span></div>
+                            <div class="table-header">{data.period} HOSTING FEE FOR PERIOD: <span id="periodDisplay2"></span></div>
 
                         <table class="w-full table">
                             <thead>
