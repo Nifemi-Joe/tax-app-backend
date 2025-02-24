@@ -412,7 +412,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		companyId: savedInvoice.companyId,
 		createdBy: savedInvoice.createdBy
 	});
-	const templatePath = path.resolve(__dirname, "../templates/invoiceglobalsjx.pdf");
 	await taxEntity.save();
 	let clientIdd = savedInvoice.clientId
 	const whtRate = invoiceData.wht || 10; // Assume a default WHT rate if not provided
@@ -505,6 +504,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd
 		updatedInvoice.save();
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
+		console.log(existingAccount);
 		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
 		if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
 			updatedInvoice.status = "paid";
@@ -524,20 +524,11 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			}
 
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
-			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice}, "acs_rba_invoice.ejs")
-			const mergedPdf = await PDFDocument.create();
-			const pdf1 = await PDFDocument.load(pdfInvoice);
-			const pdf2 = await PDFDocument.load(pdf);
-			const pdf1Pages = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
-			pdf1Pages.forEach((page) => mergedPdf.addPage(page));
-
-			const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
-			pdf2Pages.forEach((page) => mergedPdf.addPage(page));
-
-			const mergedPdfBytes = await mergedPdf.save();
+			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 			const attachment = {
 				filename: "Invoice.pdf",
-				content: Buffer.from(mergedPdfBytes),
+				content: pdfInvoice,
+				contentType: "application/pdf"
 			};
 			await sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
 			existingClient.email.forEach((person)=> {
@@ -561,20 +552,11 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 
 		await recalculateClientTotals(updatedInvoice.clientId);
 
-		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice}, "acs_rba_invoice.ejs")
-		const mergedPdf = await PDFDocument.create();
-		const pdf1 = await PDFDocument.load(pdfInvoice);
-		const pdf2 = await PDFDocument.load(pdf);
-		const pdf1Pages = await mergedPdf.copyPages(pdf1, pdf1.getPageIndices());
-		pdf1Pages.forEach((page) => mergedPdf.addPage(page));
-
-		const pdf2Pages = await mergedPdf.copyPages(pdf2, pdf2.getPageIndices());
-		pdf2Pages.forEach((page) => mergedPdf.addPage(page));
-
-		const mergedPdfBytes = await mergedPdf.save();
+		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
 		const attachment = {
 			filename: "Invoice.pdf",
-			content: Buffer.from(mergedPdfBytes),
+			content: pdfInvoice,
+			contentType: "application/pdf"
 		};
 		// Send notifications
 		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
@@ -746,6 +728,7 @@ exports.softDelete = asyncHandler(async (req, res) => {
 
 	// Find and delete taxes associated with this revenue's invoiceNo
 	await Tax.deleteMany({ invoiceNo: revenue.invoiceNo });
+	await WHT.deleteMany({ invoiceNo: revenue.invoiceNo });
 
 	res.status(200).json({
 		responseCode: "00",
