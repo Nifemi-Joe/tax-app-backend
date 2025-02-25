@@ -103,7 +103,7 @@ const InvoiceSchema = new Schema({
 		required: true,
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure amountDue is fixed to 2 decimal places
 	},
-	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid', "rejected"], required: true },
+	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid', "rejected", "approved"], required: true },
 	reasonForRejection: String,
 	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES', "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "CONSULTATION", "TRAINING", "LICENSE"], required: true },
 	companyName: { type: String, required: true },

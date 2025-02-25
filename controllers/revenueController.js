@@ -15,6 +15,14 @@ const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
 const sendEmail = require("../utils/emailService");
 const Account = require("../models/Account");
+const formatCurrency = (amount, currency = 'NGN') => {
+	return new Intl.NumberFormat('en-US', {
+		style: 'currency',
+		currency: currency,
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2
+	}).format(amount);
+};
 
 const generateEmailContent = (role, invoiceData, client) => {
 	let emailContent = `
@@ -46,16 +54,16 @@ const generateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.totalInvoiceFee_ngn)}</li>
               <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
-              <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
+              <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		        <li><strong>Tax Amount:</strong> ${invoiceData.taxAmountDeducted}</li>
-		        <li><strong>Net Amount:</strong> ${invoiceData.netAmount}</li>
+		        <li><strong>Tax Amount:</strong> ${formatCurrency(invoiceData.taxAmountDeducted)}</li>
+		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
 		      </ul>
 		
 		      <h3>Client Details:</h3>
@@ -115,17 +123,17 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.totalInvoiceFee_ngn)}</li>
               <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
-              <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
+              <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		        <li><strong>Tax Amount:</strong> ${invoiceData.taxAmountDeducted}</li>
-		        <li><strong>Net Amount:</strong> ${invoiceData.netAmount}</li>
-		      </ul>
+		     	<li><strong>Tax Amount:</strong> ${formatCurrency(invoiceData.taxAmountDeducted)}</li>
+		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
+		     </ul>
 		
 		      <h3>Client Details:</h3>
 		      <ul>
@@ -183,7 +191,7 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
             <p>We are pleased to inform you that payment for invoice <strong>${invoiceData.invoiceNo}</strong> has been successfully received. Below are the details:</p>
             <ul>
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
-              <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
+              <li><strong>Amount Paid:</strong> ${formatCurrency(invoiceData.amountPaid)}</li>
               <li><strong>Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Payment Date:</strong> ${new Date(invoiceData.paymentDate).toLocaleDateString()}</li>
               <li><strong>Issue Date:</strong> ${new Date(invoiceData.transactionDate).toLocaleDateString()}</li>
@@ -233,7 +241,7 @@ const generateEmailRejectedContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${invoiceData.amountDue}</li>
+              <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
               <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
@@ -438,10 +446,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		filename: "Invoice.pdf",
 		content: pdfInvoice,
 		contentType: "application/pdf"
-	};
-	existingClient.email.forEach((person)=> {
-		sendEmail(person, 'Invoice Created', emailContentClient, "",[attachment]);
-	})
+	}
 	sendEmail(user.email, 'Invoice Created', emailContentClient, "",[attachment]);
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
@@ -484,8 +489,8 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			return res.status(404).json({ success: false, responseCode: "22",
 				responseMessage: 'Invoice not found' });
 		}
-		if (updatedInvoice.status === "rejected" && user.role === "backOffice"){
-			const backofficeEmails = await User.find({ role: { $in: ['frontOffice'] } });
+		if (updatedInvoice.status === "rejected"){
+			const backofficeEmails = await User.find({ role: { $in: ['frontOffice', 'admin', 'superadmin'] } });
 			backofficeEmails.forEach(user => {
 				const emailContentAdmin = generateEmailRejectedContent('admin', updatedInvoice, existingClient);
 				sendEmail(user.email, 'Invoice Rejected', emailContentAdmin, "");
@@ -504,8 +509,14 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd
 		updatedInvoice.save();
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		console.log(existingAccount);
-		const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
+		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
+		const attachment = {
+			filename: "Invoice.pdf",
+			content: pdfInvoice,
+			contentType: "application/pdf"
+		};
+		await recalculateClientTotals(updatedInvoice.clientId);
+		// Send notif
 		if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
 			updatedInvoice.status = "paid";
 			await updatedInvoice.save();
@@ -549,27 +560,29 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				responseData: updatedInvoice
 			});
 		}
-
-		await recalculateClientTotals(updatedInvoice.clientId);
-
-		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
-		const attachment = {
-			filename: "Invoice.pdf",
-			content: pdfInvoice,
-			contentType: "application/pdf"
-		};
-		// Send notifications
-		const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
-		existingClient.email.forEach((person)=> {
-			sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
-		})
-		await sendEmail(user.email, 'Invoice Updated', emailContentClient, "", [attachment]);
-		const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
-		backofficeEmails.forEach(user => {
-			const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
-			sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
-		});
-
+		else if (updatedInvoice.status === "approved"){
+			const emailContentClients = generateEmailContent('client', updatedInvoice, existingClient);
+			existingClient.email.forEach((person)=> {
+				sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
+			})
+			await sendEmail(user.email, 'Invoice Approved', emailContentClient, "", [attachment]);
+			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+			backofficeEmails.forEach(user => {
+				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
+				sendEmail(user.email, 'Invoice Approved', emailContentAdmin, "", [attachment]);
+			});
+		}
+		else{
+			const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
+			existingClient.email.forEach((person)=> {
+				sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
+			})
+			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+			backofficeEmails.forEach(user => {
+				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
+				sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
+			});
+		}
 		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
 
 		res.status(200).json({
