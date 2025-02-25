@@ -565,11 +565,12 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
 			})
-			await sendEmail(user.email, 'Invoice Approved', emailContentClient, "", [attachment]);
+			const emailContentClientss = generateEmailContent('admin', updatedInvoice, existingClient);
+			await sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
 				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
-				sendEmail(user.email, 'Invoice Approved', emailContentAdmin, "", [attachment]);
+				sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
 			});
 		}
 		else{
