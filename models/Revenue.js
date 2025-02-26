@@ -90,6 +90,12 @@ const InvoiceSchema = new Schema({
 	transactionDueDate: { type: Date },
 	period: {type: String, enum: ["monthly", "quarterly", "annually"], default: "monthly"},
 	amountInWords: String,
+	startDate: {
+		type: Date
+	},
+	endDate: {
+		type: Date
+	},
 	rate: Number,
 	amountPaid: {
 		type: Number,

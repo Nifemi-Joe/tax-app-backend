@@ -62,7 +62,7 @@ const generateEmailContent = (role, invoiceData, client) => {
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		        <li><strong>Tax Amount:</strong> ${formatCurrency(invoiceData.taxAmountDeducted)}</li>
+		     	<li><strong>Tax Amount:</strong> ${formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn))}</li>
 		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
 		      </ul>
 		
@@ -131,7 +131,7 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		     	<li><strong>Tax Amount:</strong> ${formatCurrency(invoiceData.taxAmountDeducted)}</li>
+		     	<li><strong>Tax Amount:</strong> ${formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn))}</li>
 		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
 		     </ul>
 		
@@ -508,8 +508,9 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		updatedInvoice.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn
 		updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd
 		updatedInvoice.save();
+		const combinedObj = {...updatedInvoice, ...existingClient};
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
+		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
 		const attachment = {
 			filename: "Invoice.pdf",
 			content: pdfInvoice,
@@ -535,7 +536,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			}
 
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
-			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
+			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 			const attachment = {
 				filename: "Invoice.pdf",
 				content: pdfInvoice,
