@@ -437,11 +437,11 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	await existingClient.save();
 	await whtEntity.save();
 	const existingTax = await Tax.findOne({clientId: clientIdd});
-	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
+	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, phone: existingClient.phone, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
 	const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
 	let formatDate = new Date(transactionDate).toLocaleDateString();
 	// const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
-	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
+	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 	const attachment = {
 		filename: "Invoice.pdf",
 		content: pdfInvoice,
@@ -510,7 +510,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		updatedInvoice.save();
 		const combinedObj = {...updatedInvoice, ...existingClient};
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
+		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
 		const attachment = {
 			filename: "Invoice.pdf",
 			content: pdfInvoice,
@@ -536,7 +536,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			}
 
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
-			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
+			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 			const attachment = {
 				filename: "Invoice.pdf",
 				content: pdfInvoice,
