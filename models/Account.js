@@ -25,7 +25,7 @@ const accountSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['active', 'pending', 'closed'],
+			enum: ['active', 'pending', 'closed', 'inactive', 'deleted'],
 			default: 'Active',
 		},
 		createdBy: {
