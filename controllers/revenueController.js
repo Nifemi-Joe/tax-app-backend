@@ -606,10 +606,22 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 exports.printInvoice = asyncHandler(async (req, res) => {
 	try {
 		const { id } = req.params;
-		const invoice = await Revenue.findById(id);
+		let invoice;
+
+		// Check if the parameter contains "INV" to determine search method
+		if (id.includes("INV")) {
+			// Search by invoiceNo
+			invoice = await Revenue.findOne({ invoiceNo: id });
+		} else {
+			// Search by ID
+			invoice = await Revenue.findById(id);
+		}
 
 		if (!invoice) {
-			return res.status(404).json({ success: false, error: 'Invoice not found' });
+			return res.status(404).json({
+				success: false,
+				error: 'Invoice not found'
+			});
 		}
 
 		res.status(200).json({
@@ -619,7 +631,10 @@ exports.printInvoice = asyncHandler(async (req, res) => {
 		});
 	} catch (error) {
 		console.error('Error in printInvoice:', error.message);
-		res.status(500).json({ success: false, error: 'Internal Server Error' });
+		res.status(500).json({
+			success: false,
+			error: 'Internal Server Error'
+		});
 	}
 });
 
