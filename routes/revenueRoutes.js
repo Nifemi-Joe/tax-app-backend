@@ -27,7 +27,7 @@ router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'backO
 // @desc    Print an invoice as a PDF
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
-router.get('/printInvoice/:id', protect, validateObjectId('id'), printInvoice);
+router.get('/printInvoice/:id', protect, printInvoice);
 router.get('/downloadInvoice/:id', protect,validateObjectId('id'), downloadInvoice);
 
 // @desc    Spool invoices based on filters
