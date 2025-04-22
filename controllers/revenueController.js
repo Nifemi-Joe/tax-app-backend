@@ -562,26 +562,26 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			});
 		}
 		else if (updatedInvoice.status === "approved"){
-			const emailContentClients = generateEmailContent('client', updatedInvoice, existingClient);
+			const emailContentClients = generateEmailContent('client', combinedObj, existingClient);
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
 			})
-			const emailContentClientss = generateEmailContent('admin', updatedInvoice, existingClient);
+			const emailContentClientss = generateEmailContent('admin', combinedObj, existingClient);
 			await sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
-				sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
+				const emailContentAdmin = generateUpdateEmailContent('admin', combinedObj, existingClient);
+				sendEmail(user.email, 'Invoice Approved', emailContentAdmin, "", [attachment]);
 			});
 		}
 		else{
-			const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
+			const emailContentClient = generateUpdateEmailContent('client', combinedObj, existingClient);
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
 			})
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
+				const emailContentAdmin = generateUpdateEmailContent('admin', combinedObj, existingClient);
 				sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
 			});
 		}
