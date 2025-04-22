@@ -510,7 +510,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		updatedInvoice.save();
 		const combinedObj = {...updatedInvoice, ...existingClient};
 		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
+		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
 		const attachment = {
 			filename: "Invoice.pdf",
 			content: pdfInvoice,
@@ -536,7 +536,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			}
 
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
-			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: combinedObj, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
+			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 			const attachment = {
 				filename: "Invoice.pdf",
 				content: pdfInvoice,
@@ -562,6 +562,11 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			});
 		}
 		else if (updatedInvoice.status === "approved"){
+			const attachment = {
+				filename: "Invoice.pdf",
+				content: pdfInvoice,
+				contentType: "application/pdf"
+			};
 			const emailContentClients = generateEmailContent('client', combinedObj, existingClient);
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
@@ -575,6 +580,11 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			});
 		}
 		else{
+			const attachment = {
+				filename: "Invoice.pdf",
+				content: pdfInvoice,
+				contentType: "application/pdf"
+			};
 			const emailContentClient = generateUpdateEmailContent('client', combinedObj, existingClient);
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
