@@ -479,6 +479,7 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			new: true,
 			runValidators: true,
 		});
+		console.log(updatedInvoice)
 		const existingClient = await Client.findById(updatedInvoice.clientId);
 		const user = await User.findById(req.user._id);
 		if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -536,7 +537,6 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 			}
 
 			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
-			const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
 			const attachment = {
 				filename: "Invoice.pdf",
 				content: pdfInvoice,
@@ -567,15 +567,15 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				content: pdfInvoice,
 				contentType: "application/pdf"
 			};
-			const emailContentClients = generateEmailContent('client', combinedObj, existingClient);
+			const emailContentClients = generateEmailContent('client', updatedInvoice, existingClient);
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
 			})
-			const emailContentClientss = generateEmailContent('admin', combinedObj, existingClient);
+			const emailContentClientss = generateEmailContent('admin', updatedInvoice, existingClient);
 			await sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateUpdateEmailContent('admin', combinedObj, existingClient);
+				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
 				sendEmail(user.email, 'Invoice Approved', emailContentAdmin, "", [attachment]);
 			});
 		}
@@ -585,13 +585,13 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 				content: pdfInvoice,
 				contentType: "application/pdf"
 			};
-			const emailContentClient = generateUpdateEmailContent('client', combinedObj, existingClient);
+			const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
 			existingClient.email.forEach((person)=> {
 				sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
 			})
 			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateUpdateEmailContent('admin', combinedObj, existingClient);
+				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
 				sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
 			});
 		}
