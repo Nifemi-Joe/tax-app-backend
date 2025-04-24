@@ -54,7 +54,7 @@ const generateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.totalInvoiceFee_ngn)}</li>
+              <li><strong>Amount:</strong> ${formatCurrency(invoiceData.totalInvoiceFee_ngn)}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
