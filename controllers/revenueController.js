@@ -54,8 +54,7 @@ const generateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
-              <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
+              <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.totalInvoiceFee_ngn)}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
@@ -63,7 +62,7 @@ const generateEmailContent = (role, invoiceData, client) => {
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
 		     	<li><strong>Tax Amount:</strong> ${formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn))}</li>
-		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
+		        <li><strong>Net Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
 		      </ul>
 		
 		      <h3>Client Details:</h3>
@@ -124,7 +123,6 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
               <li><strong>Amount Due:</strong> ${formatCurrency(invoiceData.amountDue)}</li>
-              <li><strong>Amount Paid:</strong> ${invoiceData.amountPaid}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
