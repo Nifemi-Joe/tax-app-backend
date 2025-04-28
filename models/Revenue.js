@@ -7,11 +7,6 @@ const ServiceSchema = new Schema({
 	description: String,
 	date: Date,
 	name: String,
-	cbnratedate: {
-		type: Date,
-		required: true,
-		default: Date.now()
-	},
 	transactions: [{
 		id: String,
 		description: String,
@@ -90,6 +85,11 @@ const InvoiceSchema = new Schema({
 	transactionDueDate: { type: Date },
 	period: {type: String, enum: ["monthly", "quarterly", "annually"], default: "monthly"},
 	amountInWords: String,
+	cbnratedate: {
+		type: Date,
+		required: true,
+		default: Date.now()
+	},
 	startDate: {
 		type: Date
 	},

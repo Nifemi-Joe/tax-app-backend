@@ -72,10 +72,10 @@ const generateEmailContent = (role, invoiceData, client) => {
 		      </ul>
             <p>Please click the button below to update the status of the invoice in the app:</p>
             <a href="${invoiceData.statusUpdateLink}" style="padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none;"><span>Update Invoice</span></a>
-            <p>To download the invoice as a PDF, click the button below:</p>
-            <a href="http://localhost:3009/download-invoice/${invoiceData.invoiceNo}" class="button">Download PDF</a>
+            <p>All enquiries on this invoice should be sent to - <a>All enquiries on this invoice should be sent to</a> with a copy to <a>ifeanyi.iroegbu@globalsjxltd.com</a></p>
+            <p>Please find attached your invoice.</p>
             <p>If you encounter any issues, please contact our support team.</p>
-            <p>Best Regards,<br>GSJX LTD Team</p>
+            <p>Best Regards,<br>Global SJX Finance</p>
           </div>
           <div class="footer">
             <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
@@ -140,10 +140,9 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
 		      </ul>
             <p>Please click the button below to update the status of the invoice in the app:</p>
             <a href="${invoiceData.statusUpdateLink}" style="padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none;"><span>Update Invoice</span></a>
-            <p>To download the invoice as a PDF, click the button below:</p>
-            <a href="http://localhost:3009/download-invoice/${invoiceData.invoiceNo}" class="button">Download PDF</a>
+            <p>Please find attached your invoice.</p>
             <p>If you encounter any issues, please contact our support team.</p>
-            <p>Best Regards,<br>GSJX LTD Team</p>
+            <p>Best Regards,<br>Global SJX Finance</p>
           </div>
           <div class="footer">
             <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
@@ -197,7 +196,7 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
             </ul>
             <p>Thank you for your prompt payment. ${role === 'client' ? 'We appreciate your continued business.' : ''}</p>
             ${role !== 'client' ? '<p>You can view the updated invoice details in the application.</p>' : ''}
-            <p>Best Regards,<br>GSJX LTD Team</p>
+            <p>Best Regards,<br>Global SJX Finance</p>
           </div>
           <div class="footer">
             <p>&copy; 2024 GSJX LTD. All rights reserved.</p>
