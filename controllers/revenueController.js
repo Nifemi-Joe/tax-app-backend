@@ -15,7 +15,7 @@ const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
 const sendEmail = require("../utils/emailService");
 const Account = require("../models/Account");
-const formatCurrency = (amount, currency = 'NGN') => {
+const formatCurrency = (amount, currency) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: currency,
@@ -40,6 +40,9 @@ const generateEmailContent = (role, invoiceData, client) => {
           .content { padding: 20px; line-height: 1.6; font-family: "Outfit" !important;}
           .cotent p, .content li {font-family: "Outfit" !important;}
           .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+          li {
+          color: black !important;
+          }
         </style>
       </head>
       <body>
@@ -54,15 +57,15 @@ const generateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.totalInvoiceFee_ngn) : formatCurrency(invoiceData.totalInvoiceFee_usd)}</li>
+              <li><strong>Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.totalInvoiceFee_ngn , 'NGN') : formatCurrency(invoiceData.totalInvoiceFee_usd , 'USD')}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn)) : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd))}</li>
-		        <li><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue) : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd)}</li>
+		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn , 'NGN')) : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd) , 'USD')}</li>
+		        <li><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
 		      </ul>
 		
 		      <h3>Client Details:</h3>
@@ -108,6 +111,9 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
           .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
           .content { padding: 20px; line-height: 1.6; }
           .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+          li {
+          color: black !important;
+          }
         </style>
       </head>
       <body>
@@ -122,15 +128,15 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue) : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd)}</li>
+              <li><strong>Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn)) : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd))}</li>
-		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue) : invoiceData.totalInvoiceFeePlusVat_usd}</li>
+		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn) , 'USD') : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd) , 'USD')}</li>
+		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : invoiceData.totalInvoiceFeePlusVat_usd , 'USD'}</li>
 		     </ul>
 		
 		      <h3>Client Details:</h3>
@@ -176,6 +182,9 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
           .header { text-align: center; background-color: #964FFE; color: #fff; padding: 10px 0; border-radius: 8px 8px 0 0; }
           .content { padding: 20px; line-height: 1.6; }
           .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+          li {
+          color: black !important;
+          }
         </style>
       </head>
       <body>
@@ -188,7 +197,7 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
             <p>We are pleased to inform you that payment for invoice <strong>${invoiceData.invoiceNo}</strong> has been successfully received. Below are the details:</p>
             <ul>
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
-              <li><strong>Amount Paid:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountPaid) : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd)}</li>
+              <li><strong>Amount Paid:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountPaid , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
               <li><strong>Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Payment Date:</strong> ${new Date(invoiceData.paymentDate).toLocaleDateString()}</li>
               <li><strong>Issue Date:</strong> ${new Date(invoiceData.transactionDate).toLocaleDateString()}</li>
@@ -224,6 +233,9 @@ const generateEmailRejectedContent = (role, invoiceData, client) => {
           .content { padding: 20px; line-height: 1.6; font-family: "Outfit" !important;}
           .footer { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
           .button { padding: 10px 20px; background-color: #964FFE; color: #fff; text-decoration: none; }
+          li {
+          color: black !important;
+          }
         </style>
       </head>
       <body>
@@ -238,7 +250,7 @@ const generateEmailRejectedContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue) : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd)}</li>
+              <li><strong>Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
               <li><strong>Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${invoiceData.transactionDueDate}</li>
             </ul>
@@ -386,6 +398,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	invoiceData.rateDate = transactionDate;
 	let cbnratedate = new Date(invoiceData.cbnratedate);
 	invoiceData.cbnratedate = cbnratedate;
+	console.log(invoiceData);
 	let newDate = new Date(transactionDate);
 	newDate.setDate(newDate.getDate() + 14);
 	invoiceData.transactionDueDate = newDate;

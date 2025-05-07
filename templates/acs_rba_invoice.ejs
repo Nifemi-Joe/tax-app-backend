@@ -392,8 +392,7 @@
                 <div class="header-content">
                     <h1>Bill From: </h1>
                     <h2>Global SJX Limited</h2>
-                    <p>Block 3, Plot 57b, Fatai Idowu Arobieke Street,</p>
-                    <p>Lekki Phase 1, Lagos</p>
+                    <p>Block 3, Plot 57b, Fatai Idowu Arobieke Street,Lekki Phase 1, Lagos</p>
                     <div style="display: flex; gap: 6px"><span>Email: </span><p style="display: inline">talk2us@globalsjxltd.com</p></div>
                     <div style="display: flex; gap: 6px"><span>Website: </span><p style="display: inline">www.globalsjxltd.com</p></div>
                 </div>
@@ -451,10 +450,10 @@
                     <tr>
                         <th>Description</th>
                         <th>Volume</th>
-                    <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
-                    <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                    <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                    <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
                     <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                    <th class="text-center">Total Fee (N)</th>
+                    <th class="text-center">Total Fee (₦)</th>
                     <% } %>
                     </tr>
                     </thead>
@@ -515,10 +514,10 @@
                             <tr>
                                 <th>Description</th>
                                 <th>Volume</th>
-                                <th class="text-center">Unit Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
-                                <th class="text-center">Total Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                                <th class="text-center">Unit Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                                <th class="text-center">Total Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
                                 <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                    <th class="text-center">Total Fee (N)</th>
+                                    <th class="text-center">Total Fee (₦)</th>
                                 <% } %>
                             </tr>
                             </thead>
@@ -564,10 +563,10 @@
                         <tr>
                             <th>Description</th>
                             <th>Count</th>
-                            <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
-                            <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "N" : "E" %>)</th>
+                            <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
                             <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                <th class="text-center">Total Fee (N)</th>
+                                <th class="text-center">Total Fee (₦)</th>
                             <% } %>
                         </tr>
                         </thead>
