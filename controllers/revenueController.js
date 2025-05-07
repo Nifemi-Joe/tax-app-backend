@@ -384,6 +384,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
 	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
 	invoiceData.rateDate = transactionDate;
+	let cbnratedate = new Date(invoiceData.cbnratedate);
+	invoiceData.cbnratedate = cbnratedate;
 	let newDate = new Date(transactionDate);
 	newDate.setDate(newDate.getDate() + 14);
 	invoiceData.transactionDueDate = newDate;
