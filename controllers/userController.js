@@ -329,7 +329,6 @@ exports.userRegister = asyncHandler(async (req, res) => {
       </body>
       </html>
     `;
-			 await sendEmail(user.email, "Welcome Back to GSJX LTD", emailContent);
 			 // Respond with success
 			 res.json({
 				 responseCode: "00",
@@ -337,6 +336,7 @@ exports.userRegister = asyncHandler(async (req, res) => {
 				 responseData: user,
 				 token,
 			 });
+			 await sendEmail(user.email, "Welcome Back to GSJX LTD", emailContent);
 		 }
 		 else {
 			 res.status(401).json({
@@ -518,7 +518,7 @@ exports.getProfileUser = asyncHandler(async (req, res) => {
 			<p>
 			  To change your password, please click the link below:<br />
 			  <a 
-			    href="https://cheerful-cendol-19cd82.netlify.app/create-new-password?userId=${user.id}" 
+			    href="https://cheerful-cendol-19cd82.netlify.app/create-new-password?userId=${user._id}" 
 			    style="color: #4b01c0; text-decoration: underline; font-weight: bold; font-size: 16px"
 			  >
 			    Change Your Password
