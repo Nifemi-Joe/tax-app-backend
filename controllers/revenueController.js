@@ -387,8 +387,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const referenceNumber = generateRandomNumberWithPrefix('REF');
 	// Set the transaction date to today's date
 	// Calculate total fee including VAT
-	const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
-	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
+	const totalInvoiceFeePlusVat_usd = invoiceData.taxOption ? invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100) : invoiceData.totalInvoiceFee_usd;
+	const totalInvoiceFeePlusVat_ngn = invoiceData.taxOption ? invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100) : invoiceData.totalInvoiceFee_ngn;
 	invoiceData.statusUpdateLink = "http://localhost:3000/revenue"
 	invoiceData.invoiceNo = invoiceNo;
 	invoiceData.referenceNumber = referenceNumber;
@@ -515,8 +515,8 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 		}
 		let newDate = new Date(updatedInvoice.transactionDate);
 		newDate.setDate(newDate.getDate() + 14);
-		const totalInvoiceFeePlusVat_usd = updatedInvoice.totalInvoiceFee_usd + (updatedInvoice.totalInvoiceFee_usd * updatedInvoice.vat / 100);
-		const totalInvoiceFeePlusVat_ngn = updatedInvoice.totalInvoiceFee_ngn + (updatedInvoice.totalInvoiceFee_ngn * updatedInvoice.vat / 100);
+		const totalInvoiceFeePlusVat_usd = updatedInvoice.taxOption ? updatedInvoice.totalInvoiceFee_usd + (updatedInvoice.totalInvoiceFee_usd * updatedInvoice.vat / 100) : updatedInvoice.totalInvoiceFee_usd;
+		const totalInvoiceFeePlusVat_ngn = updatedInvoice.taxOption ? updatedInvoice.totalInvoiceFee_ngn + (updatedInvoice.totalInvoiceFee_ngn * updatedInvoice.vat / 100) : updatedInvoice.totalInvoiceFee_ngn;
 		updatedInvoice.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn
 		updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd
 		updatedInvoice.save();

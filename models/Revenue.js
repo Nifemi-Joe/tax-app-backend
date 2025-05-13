@@ -145,6 +145,7 @@ const InvoiceSchema = new Schema({
 	accountNumber: { type: String },
 	bankName: { type: String },
 	includeNairaAmount: { type: Boolean, default: false },
+	taxOption: { type: Boolean, default: true },
 	currency: { type: String, default: "NGN" },
 	taxDetailsName: { type: String },
 	taxDetailsVatNumber: { type: String },
