@@ -421,9 +421,9 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 				serviceid: service.serviceid,
 				servicename: service.servicename,
 				servicedescription: service.servicedescription,
-				trans_Count: parseFloat(service.trans_Count),
-				unit_Fee: parseFloat(service.unit_Fee),
-				total_fee: parseFloat(service.trans_Count * service.unit_Fee).toFixed(2)
+				trans_Count: service.trans_Count,
+				unit_Fee: service.unit_Fee,
+				total_fee: service.trans_Count * service.unit_Fee
 			};
 		});
 
