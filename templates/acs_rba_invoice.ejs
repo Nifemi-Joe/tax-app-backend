@@ -612,6 +612,7 @@
                     <table class="w-full table">
                         <thead>
                         <tr>
+                            <th>Name</th>
                             <th>Description</th>
                             <th>Quantity</th>
                             <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
@@ -624,12 +625,13 @@
                         <tbody>
                         <% data.otherInvoiceServices.forEach(service => { %>
                             <tr>
+                                <td><%= service.name %></td>
                                 <td><%= service.description %></td>
-                                <td><%= service.quantity.toLocaleString() %></td>
-                                <td class="text-center"><%= service.unitFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                <td class="text-center"><%= service.totalFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td><%= service.trans_Count.toLocaleString() %></td>
+                                <td class="text-center"><%= service.unit_Fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td class="text-center"><%= service.total_fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                    <td class="text-center"><%= (service.totalFee * data.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                    <td class="text-center"><%= (service.total_fee * data.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% } %>
                             </tr>
                         <% }) %>
