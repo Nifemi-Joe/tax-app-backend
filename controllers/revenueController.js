@@ -512,9 +512,9 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Choose the appropriate template based on invoice type
 	let templateName = "acs_rba_invoice.ejs";
 	if (invoiceType === "OUTSOURCING" || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") {
-		templateName = "outsourcing_invoice.ejs";
+		templateName = "acs_rba_invoice.ejs";
 	} else if (invoiceType === "OTHER_INVOICES") {
-		templateName = "other_invoice.ejs";
+		templateName = "acs_rba_invoice.ejs";
 	}
 
 	const pdfInvoice = await pdfGenerate({
