@@ -341,12 +341,13 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	await check('period', 'Transaction Period is required').notEmpty().run(req);
 	await check('amountDue', 'Amount Due is required and must be a valid number').isFloat().run(req);
 	await check('transactionDate', 'Transaction Date is required').notEmpty().run(req);
-	const user = await User.findById(req.user._id,); // Assuming you have a User model
+	const user = await User.findById(req.user._id); // Assuming you have a User model
 
 	// Extract relevant fields from req.body
 	const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate } = req.body;
 
-	if ((invoiceType === 'ACS_RBA' || invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL"|| invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL") && (!service1 || !service2)) {
+	// Check required fields based on invoice type
+	if ((invoiceType === 'ACS_RBA' || invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL") && (!service1 || !service2)) {
 		return res.status(400).json({ responseMessage: 'Service1 and Service2 are required for ACS_RBA invoices', responseCode: "22" });
 	} else if ((invoiceType === 'OUTSOURCING' || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") && !roles) {
 		return res.status(400).json({ responseMessage: 'Roles are required for OUTSOURCING invoices', responseCode: "22" });
@@ -382,43 +383,86 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		});
 	}
 	const existingAccount = await Account.findOne({ _id: existingClient.account });
+
 	// Automatically generate the invoice number and reference number
 	const invoiceNo = generateRandomNumberWithPrefix('INV');
 	const referenceNumber = generateRandomNumberWithPrefix('REF');
-	// Set the transaction date to today's date
+
 	// Calculate total fee including VAT
 	const totalInvoiceFeePlusVat_usd = invoiceData.taxOption ? invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100) : invoiceData.totalInvoiceFee_usd;
 	const totalInvoiceFeePlusVat_ngn = invoiceData.taxOption ? invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100) : invoiceData.totalInvoiceFee_ngn;
-	invoiceData.statusUpdateLink = "http://localhost:3000/revenue"
+
+	// Set additional invoice data
+	invoiceData.statusUpdateLink = "https://cheerful-cendol-19cd82.netlify.app/revenue";
 	invoiceData.invoiceNo = invoiceNo;
 	invoiceData.referenceNumber = referenceNumber;
 	invoiceData.transactionDate = transactionDate;
 	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
 	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
 	invoiceData.rateDate = transactionDate;
+
+	// Handle dates properly
 	let cbnratedate = new Date(invoiceData.cbnratedate);
 	invoiceData.cbnratedate = cbnratedate;
-	console.log(invoiceData);
+
+	// Set due date (14 days after transaction date)
 	let newDate = new Date(transactionDate);
 	newDate.setDate(newDate.getDate() + 14);
 	invoiceData.transactionDueDate = newDate;
-	// invoiceData.companyId = req.user.companyId;
+
+	// Set created by
 	invoiceData.createdBy = req.user._id;
+
+	// Process OTHER_INVOICES type specifically
+	if (invoiceType === 'OTHER_INVOICES') {
+		// Ensure services are properly formatted
+		invoiceData.otherInvoiceServices = invoiceData.otherInvoiceServices.map(service => {
+			return {
+				serviceid: service.serviceid,
+				servicename: service.servicename,
+				servicedescription: service.servicedescription,
+				trans_Count: parseFloat(service.trans_Count),
+				unit_Fee: parseFloat(service.unit_Fee),
+				total_fee: parseFloat(service.trans_Count * service.unit_Fee).toFixed(2)
+			};
+		});
+
+		// Calculate totals for OTHER_INVOICES
+		const totalOtherServices = invoiceData.otherInvoiceServices.reduce((total, service) => {
+			return total + (service.trans_Count * service.unit_Fee);
+		}, 0);
+
+		// Update invoice data with calculated totals
+		invoiceData.totalInvoiceFee_usd = totalOtherServices;
+		invoiceData.totalInvoiceFee_ngn = invoiceData.currency !== "NGN" ? totalOtherServices * invoiceData.rate : totalOtherServices;
+
+		// Update total with VAT
+		invoiceData.totalInvoiceFeePlusVat_usd = invoiceData.taxOption ? totalOtherServices + (totalOtherServices * invoiceData.vat / 100) : totalOtherServices;
+		invoiceData.totalInvoiceFeePlusVat_ngn = invoiceData.taxOption ?
+			(invoiceData.currency !== "NGN" ?
+				(totalOtherServices + (totalOtherServices * invoiceData.vat / 100)) * invoiceData.rate :
+				totalOtherServices + (totalOtherServices * invoiceData.vat / 100)) :
+			invoiceData.totalInvoiceFee_ngn;
+	}
 
 	// Create invoice record
 	const newInvoice = new Revenue(invoiceData);
 	const savedInvoice = await newInvoice.save();
+
+	// Update client's total invoice amount
 	const totalInvoices = await Revenue.aggregate([
 		{ $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
 		{ $group: { _id: null, clientTotalInvoice: { $sum: "$amountDue" } } }
 	]);
-	// Update the client's total invoice amount
+
 	existingClient.clientTotalInvoice = totalInvoices[0]?.clientTotalInvoice || 0;
 	await recalculateClientTotals(invoiceData.clientId);
+
 	// Handle tax and other logic
 	const taxRate = determineTaxRate(savedInvoice);
 	const taxAmount = savedInvoice.totalInvoiceFee_ngn * (savedInvoice.vat / 100);
 	const netAmount = savedInvoice.totalInvoiceFee_ngn - taxAmount;
+
 	const taxEntity = new Tax({
 		taxId: generateRandomNumberWithPrefix('TAX'),
 		invoiceNo: savedInvoice.invoiceNo,
@@ -432,7 +476,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		createdBy: savedInvoice.createdBy
 	});
 	await taxEntity.save();
-	let clientIdd = savedInvoice.clientId
+
+	let clientIdd = savedInvoice.clientId;
 	const whtRate = invoiceData.wht || 10; // Assume a default WHT rate if not provided
 	const whtAmount = savedInvoice.totalInvoiceFee_ngn * (whtRate / 100);
 	const whtEntity = new WHT({
@@ -445,39 +490,75 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		status: "unpaid",
 		createdBy: savedInvoice.createdBy
 	});
+
 	await existingClient.save();
 	await whtEntity.save();
+
 	const existingTax = await Tax.findOne({clientId: clientIdd});
-	const combinedObj = {  ...existingClient, taxAmountDeducted: taxAmount, netAmount: netAmount, ...invoiceData, phone: existingClient.phone, name: existingClient.name, email: existingClient.email, firstname: user.name || user.firstname };
+	const combinedObj = {
+		...existingClient,
+		taxAmountDeducted: taxAmount,
+		netAmount: netAmount,
+		...invoiceData,
+		phone: existingClient.phone,
+		name: existingClient.name,
+		email: existingClient.email,
+		firstname: user.name || user.firstname
+	};
+
 	const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
 	let formatDate = new Date(transactionDate).toLocaleDateString();
-	// const pdf = await pdfGenerate({accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "accountDetails.ejs")
-	const pdfInvoice = await pdfGenerate({invoiceType, transactionDate: formatDate, invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: savedInvoice.currency, data: combinedObj, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs")
+
+	// Choose the appropriate template based on invoice type
+	let templateName = "acs_rba_invoice.ejs";
+	if (invoiceType === "OUTSOURCING" || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") {
+		templateName = "outsourcing_invoice.ejs";
+	} else if (invoiceType === "OTHER_INVOICES") {
+		templateName = "other_invoice.ejs";
+	}
+
+	const pdfInvoice = await pdfGenerate({
+		invoiceType,
+		transactionDate: formatDate,
+		invoiceNo,
+		transactionDueDate: newDate.toLocaleDateString(),
+		currency: savedInvoice.currency,
+		data: combinedObj,
+		accountName: existingAccount.accountName,
+		accountNumber: existingAccount.accountNumber,
+		bankName: existingAccount.bankName,
+		phone: existingClient.phone,
+		name: existingClient.name,
+		clientname: existingClient.name,
+		email: existingClient.email,
+		taxName: "Global SJX Limited",
+		taxNumber: "10582697-0001"
+	}, templateName);
+
 	const attachment = {
 		filename: "Invoice.pdf",
 		content: pdfInvoice,
 		contentType: "application/pdf"
-	}
-	sendEmail(user.email, 'Invoice Created', emailContentClient, "",[attachment]);
+	};
+
+	// Send email to client
+	sendEmail(user.email, 'Invoice Created', emailContentClient, "", [attachment]);
+
+	// Send email to backoffice
 	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
 	backofficeEmails.forEach(user => {
 		const emailContentAdmin = generateEmailContent('admin', combinedObj, existingClient);
-		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "",[attachment]);
+		sendEmail(user.email, 'New Invoice Created', emailContentAdmin, "", [attachment]);
 	});
-	// // Render the invoice template
-	// const invoiceHTML = path.resolve(__dirname, `../templates/${invoiceType.toLowerCase()}_invoice.html`);
-	// const pdfBuffer = await generatePDF(invoiceHTML, savedInvoice);
 
-	// res.setHeader('Content-Disposition', `attachment; filename=invoice_${savedInvoice.invoiceNo}.pdf`);
-	// res.setHeader('Content-Type', 'application/pdf');
 	res.status(201).json({
 		responseCode: "00",
 		responseMessage: "Invoice created successfully",
 		responseData: savedInvoice
 	});
-	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
-});
 
+	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
+});
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
 // @route   PUT /api/revenue/updateInvoice/:id

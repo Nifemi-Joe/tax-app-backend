@@ -111,11 +111,12 @@ const InvoiceSchema = new Schema({
 	},
 	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid', "rejected", "approved"], required: true },
 	reasonForRejection: String,
-	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES', "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "CONSULTATION", "TRAINING", "LICENSE"], required: true },
+	invoiceType: { type: String, enum: ['ACS_RBA', 'OUTSOURCING', 'OTHER_INVOICES', "RBA_ACS", "ACS_RENTAL", "RBA_RENTAL", "CONSULTATION", "TRAINING", "LICENSE"], required: true },
 	companyName: { type: String, required: true },
 	service1: ServiceSchema,
 	roles: [RoleSchema],
 	service2: ServiceSchema,
+	otherInvoiceServices: [OtherInvoiceServiceSchema], // Add the OTHER_INVOICES services array
 	totalInvoiceFee_usd: {
 		type: Number,
 		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFee_usd is fixed to 2 decimal places
@@ -131,7 +132,7 @@ const InvoiceSchema = new Schema({
 	wht: {
 		type: Number,
 		default: 10,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure vat is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(2)) // Ensure wht is fixed to 2 decimal places
 	},
 	totalInvoiceFeePlusVat_usd: {
 		type: Number,
