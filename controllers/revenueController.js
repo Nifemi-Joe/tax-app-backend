@@ -389,8 +389,8 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	const referenceNumber = generateRandomNumberWithPrefix('REF');
 
 	// Calculate total fee including VAT
-	const totalInvoiceFeePlusVat_usd = invoiceData.taxOption ? invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100) : invoiceData.totalInvoiceFee_usd;
-	const totalInvoiceFeePlusVat_ngn = invoiceData.taxOption ? invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100) : invoiceData.totalInvoiceFee_ngn;
+	const totalInvoiceFeePlusVat_usd =  invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
+	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
 
 	// Set additional invoice data
 	invoiceData.statusUpdateLink = "https://cheerful-cendol-19cd82.netlify.app/revenue";
@@ -437,12 +437,10 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 		invoiceData.totalInvoiceFee_ngn = invoiceData.currency !== "NGN" ? totalOtherServices * invoiceData.rate : totalOtherServices;
 
 		// Update total with VAT
-		invoiceData.totalInvoiceFeePlusVat_usd = invoiceData.taxOption ? totalOtherServices + (totalOtherServices * invoiceData.vat / 100) : totalOtherServices;
-		invoiceData.totalInvoiceFeePlusVat_ngn = invoiceData.taxOption ?
-			(invoiceData.currency !== "NGN" ?
+		invoiceData.totalInvoiceFeePlusVat_usd = totalOtherServices + (totalOtherServices * invoiceData.vat / 100);
+		invoiceData.totalInvoiceFeePlusVat_ngn = (invoiceData.currency !== "NGN" ?
 				(totalOtherServices + (totalOtherServices * invoiceData.vat / 100)) * invoiceData.rate :
-				totalOtherServices + (totalOtherServices * invoiceData.vat / 100)) :
-			invoiceData.totalInvoiceFee_ngn;
+				totalOtherServices + (totalOtherServices * invoiceData.vat / 100));
 	}
 
 	// Create invoice record

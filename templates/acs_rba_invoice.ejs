@@ -444,108 +444,108 @@
                             day: "numeric",
                         }) %></div>
                 <% }%>
-                    <% if ((data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") && data.service1.transactions[0].description) { %>
+                <% if ((data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") && data.service1.transactions[0].description) { %>
                     <table class="w-full table">
-                    <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th>Volume</th>
-                    <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
-                    <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
-                    <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                    <th class="text-center">Total Fee (₦)</th>
-                    <% } %>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <% data.service1.transactions.forEach(transaction => { %>
-                    <tr>
-                        <td><%= transaction.description %></td>
-                        <td><%= transaction.volume.toLocaleString() %></td>
-                        <td class="text-center"><%= transaction.unitfee_usd.toLocaleString(("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric"})) %></td>
-                        <td class="text-center"><%= transaction.totalfee_usd.toLocaleString(("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric"}))%></td>
-                        <% if (currency !== 'NGN'  && data.includeNairaAmount) { %>
-                        <td class="text-center"><%= transaction.totalfee_ngn.toLocaleString(("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric"})) %></td>
-                        <% } %>
-                    </tr>
-                    <% }) %>
-                    </tbody>
-                    <tfoot>
-                    <tr>
-                        <td colspan="3" class="font-bold italic">Sub-Total - A</td>
-                        <td class="font-bold italic"><%= data.service1.serviceTotalFeeUsd.toLocaleString(("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric"})) %></td>
-                        <% if (data.currency !== 'NGN'  && data.includeNairaAmount) { %>
-                        <td class="font-bold italic"><%= data.service1.serviceTotalFeeNgn.toLocaleString(("en-US", {
+                        <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Volume</th>
+                            <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
+                                <th class="text-center">Total Fee (₦)</th>
+                            <% } %>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% data.service1.transactions.forEach(transaction => { %>
+                            <tr>
+                                <td><%= transaction.description %></td>
+                                <td><%= transaction.volume.toLocaleString() %></td>
+                                <td class="text-center"><%= transaction.unitfee_usd.toLocaleString(("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric"})) %></td>
+                                <td class="text-center"><%= transaction.totalfee_usd.toLocaleString(("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric"}))%></td>
+                                <% if (currency !== 'NGN'  && data.includeNairaAmount) { %>
+                                    <td class="text-center"><%= transaction.totalfee_ngn.toLocaleString(("en-US", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric"})) %></td>
+                                <% } %>
+                            </tr>
+                        <% }) %>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="3" class="font-bold italic">Sub-Total - A</td>
+                            <td class="font-bold italic"><%= data.service1.serviceTotalFeeUsd.toLocaleString(("en-US", {
                                     year: "numeric",
                                     month: "long",
                                     day: "numeric"})) %></td>
-                        <% } %>
-                    </tr>
-                    </tfoot>
+                            <% if (data.currency !== 'NGN'  && data.includeNairaAmount) { %>
+                                <td class="font-bold italic"><%= data.service1.serviceTotalFeeNgn.toLocaleString(("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric"})) %></td>
+                            <% } %>
+                        </tr>
+                        </tfoot>
                     </table>
-                    <% }%>
-                </div>
-                    <div class="table-container">
-                        <% if ((data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") && data.service2.transactions[0].description) { %>
-                            <div class="table-header periodDisplay"><%= data.period %> HOSTING FEE FOR PERIOD: <%= new Date(data.startDate).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                }) %> - <%= new Date(data.endDate).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                }) %></div>
+                <% }%>
+            </div>
+            <div class="table-container">
+                <% if ((data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") && data.service2.transactions[0].description) { %>
+                    <div class="table-header periodDisplay"><%= data.period %> HOSTING FEE FOR PERIOD: <%= new Date(data.startDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                        }) %> - <%= new Date(data.endDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                        }) %></div>
 
-                        <table class="w-full table">
-                            <thead>
+                    <table class="w-full table">
+                        <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Volume</th>
+                            <th class="text-center">Unit Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <th class="text-center">Total Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
+                                <th class="text-center">Total Fee (₦)</th>
+                            <% } %>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% data.service2.transactions.forEach(transaction => { %>
                             <tr>
-                                <th>Description</th>
-                                <th>Volume</th>
-                                <th class="text-center">Unit Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
-                                <th class="text-center">Total Fee  (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                                <td><%= transaction.description %></td>
+                                <td><%= transaction.volume.toLocaleString() %></td>
+                                <td class="text-center"><%= transaction.unitfee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td class="text-center"><%= transaction.totalfee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                    <th class="text-center">Total Fee (₦)</th>
+                                    <td class="text-center"><%= transaction.totalfee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% } %>
                             </tr>
-                            </thead>
-                            <tbody>
-                            <% data.service2.transactions.forEach(transaction => { %>
-                                <tr>
-                                    <td><%= transaction.description %></td>
-                                    <td><%= transaction.volume.toLocaleString() %></td>
-                                    <td class="text-center"><%= transaction.unitfee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                    <td class="text-center"><%= transaction.totalfee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                    <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                        <td class="text-center"><%= transaction.totalfee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                    <% } %>
-                                </tr>
-                            <% }) %>
-                            </tbody>
-                            <tfoot>
-                            <tr>
-                                <td colspan="3" class="font-bold italic">Sub-Total - B</td>
-                                <td class="font-bold italic"><%= data.service2.serviceTotalFeeUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
-                                    <td class="font-bold italic"><%= data.service2.serviceTotalFeeNgn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                <% } %>
-                            </tr>
-                            </tfoot>
-                        </table>
-                            <% }%>
-                    </div>
+                        <% }) %>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="3" class="font-bold italic">Sub-Total - B</td>
+                            <td class="font-bold italic"><%= data.service2.serviceTotalFeeUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                                <td class="font-bold italic"><%= data.service2.serviceTotalFeeNgn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% } %>
+                        </tr>
+                        </tfoot>
+                    </table>
+                <% }%>
+            </div>
             <div class="table-container">
                 <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
                     <div class="table-header periodDisplay">MONTHLY <% data.invoiceType %> FOR PERIOD: <%= new Date(data.startDate).toLocaleDateString("en-US", {
@@ -595,49 +595,127 @@
                     </table>
                 <% }%>
             </div>
+
+            <!-- Add OTHER_INVOICES type -->
+            <div class="table-container">
+                <% if (data.invoiceType === "OTHER_INVOICES" && data.otherInvoiceServices && data.otherInvoiceServices.length > 0) { %>
+                    <div class="table-header periodDisplay">INVOICE FOR PERIOD: <%= new Date(data.startDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                        }) %> - <%= new Date(data.endDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                        }) %></div>
+
+                    <table class="w-full table">
+                        <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
+                                <th class="text-center">Total Fee (₦)</th>
+                            <% } %>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% data.otherInvoiceServices.forEach(service => { %>
+                            <tr>
+                                <td><%= service.description %></td>
+                                <td><%= service.quantity.toLocaleString() %></td>
+                                <td class="text-center"><%= service.unitFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td class="text-center"><%= service.totalFee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
+                                    <td class="text-center"><%= (service.totalFee * data.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <% } %>
+                            </tr>
+                        <% }) %>
+                        </tbody>
+                        <tfoot>
+                        <tr>
+                            <td colspan="3" class="font-bold italic">Sub-Total</td>
+                            <% if (data.currency === "NGN") { %>
+                                <td class="font-bold italic"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% } else { %>
+                                <td class="font-bold italic"><%= data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <% if (data.includeNairaAmount) { %>
+                                    <td class="font-bold italic"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <% } %>
+                            <% } %>
+                        </tr>
+                        </tfoot>
+                    </table>
+                <% }%>
+            </div>
+
             <table class="w-full table mt-2">
                 <tbody>
                 <tr class="tr-border">
-                    <td colspan="4" class="font-bold">TOTAL FEE (A+B)</td>
+                    <td colspan="4" class="font-bold">TOTAL FEE <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>(A+B)<% } %></td>
                     <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
                         <td class="font-bold text-right"><%= data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                         <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
                             <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                         <% } %>
-                    <% } %>
-                    <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                    <% } else if (data.invoiceType === "OTHER_INVOICES") { %>
+                        <% if (data.currency === "NGN") { %>
+                            <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                        <% } else { %>
+                            <td class="font-bold text-right"><%= data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% if (data.includeNairaAmount) { %>
+                                <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% } %>
+                        <% } %>
+                    <% } else if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
                         <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                         <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
                             <td class="font-bold text-right"><%= data.totalInvoiceFee_usd.toLocaleString() %></td>
                         <% } %>
                     <% } %>
-
                 </tr>
-                <tr class="tr-border">
-                    <td colspan="4" class="font-bold">VAT</td>
-                    <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
-                        <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
-                        <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
-                            <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                        <% } %>
-                    <% } %>
-                    <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
-                        <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                        <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                <%if (data.taxOption) {%>
+                    <tr class="tr-border">
+                        <td colspan="4" class="font-bold">VAT</td>
+                        <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
                             <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
+                            <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                                <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% } %>
+                        <% } else if (data.invoiceType === "OTHER_INVOICES") { %>
+                            <% if (data.currency === "NGN") { %>
+                                <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% } else { %>
+                                <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <% if (data.includeNairaAmount) { %>
+                                    <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <% } %>
+                            <% } %>
+                        <% } else if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                            <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                            <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                                <td class="font-bold text-right"><%= ((data.vat/100) * data.totalInvoiceFee_usd).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
+                            <% } %>
                         <% } %>
-                    <% } %>
-                </tr>
+                    </tr>
+                <% } %>
                 </tbody>
             </table>
             <table class="w-full table mt-2">
                 <tr class="tr-border">
                     <td colspan="5" class="font-bold" style="width: 80%">GRAND TOTAL in <%= data.currency %></td>
                     <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
-                        <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.totalInvoiceFeePlusVat_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                    <% } %>
-                    <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
-                        <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.totalInvoiceFeePlusVat_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                        <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.taxOption ? data.totalInvoiceFeePlusVat_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                    <% } else if (data.invoiceType === "OTHER_INVOICES") { %>
+                        <% if (data.currency === "NGN") { %>
+                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.taxOption ? data.totalInvoiceFeePlusVat_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                        <% } else { %>
+                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.taxOption ? data.totalInvoiceFeePlusVat_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
+                        <% } %>
+                    <% } else if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                        <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.taxOption ? data.totalInvoiceFeePlusVat_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
                     <% } %>
                 </tr>
                 <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
@@ -645,17 +723,14 @@
                         <td colspan="5" class="font-bold" style="width: 80%">GRAND TOTAL in NGN
                             <span>(CBN: N <%= data.rate %> /$1 as @ <%= new Date(data.cbnratedate).toLocaleDateString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>)</span>
                         </td>
-                        <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL") { %>
-                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= (((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
-                        <% } %>
-                        <% if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
-                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= (((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                        <% if (data.invoiceType === "ACS_RBA" || data.invoiceType === "RBA_ACS" || data.invoiceType === "ACS_RENTAL" || data.invoiceType === "RBA_RENTAL" || data.invoiceType === "OTHER_INVOICES") { %>
+                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.taxOption ? (((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})  %></td>
+                        <% } else if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
+                            <td class="font-bold text-right" style="width: 20%; text-align: right"><%= data.taxOption ? (((data.vat/100) * data.totalInvoiceFee_ngn) + data.totalInvoiceFee_ngn).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})%></td>
                         <% } %>
                     </tr>
                 <% } %>
-
             </table>
-
         </div>
         <div class="footer-container">
             <div class="px-2 py-2 font-black border-slate-200 border-b bb-border second-font-bold" style="font-size: 12px; font-weight: 500">AMOUNT IN WORDS:
