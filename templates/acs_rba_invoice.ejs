@@ -625,8 +625,8 @@
                         <tbody>
                         <% data.otherInvoiceServices.forEach(service => { %>
                             <tr>
-                                <td><%= service.name %></td>
-                                <td><%= service.description %></td>
+                                <td><%= service.servicename %></td>
+                                <td><%= service.servicedescription %></td>
                                 <td><%= service.trans_Count.toLocaleString() %></td>
                                 <td class="text-center"><%= service.unit_Fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <td class="text-center"><%= service.total_fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
@@ -638,7 +638,7 @@
                         </tbody>
                         <tfoot>
                         <tr>
-                            <td colspan="3" class="font-bold italic">Sub-Total</td>
+                            <td colspan="4" class="font-bold italic">Sub-Total</td>
                             <% if (data.currency === "NGN") { %>
                                 <td class="font-bold italic"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                             <% } else { %>
