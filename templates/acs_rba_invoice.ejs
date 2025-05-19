@@ -612,26 +612,26 @@
                     <table class="w-full table">
                         <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Quantity</th>
-                            <th class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
-                            <th class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <th colspan="2">Name</th>
+                            <th colspan="3">Description</th>
+                            <th colspan="1">Quantity</th>
+                            <th colspan="1" class="text-center">Unit Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
+                            <th colspan="1" class="text-center">Total Fee (<%= currency === "USD" ? "$" : currency === "NGN" ? "₦" : "E" %>)</th>
                             <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                <th class="text-center">Total Fee (₦)</th>
+                                <th  colspan="1" class="text-center">Total Fee (₦)</th>
                             <% } %>
                         </tr>
                         </thead>
                         <tbody>
                         <% data.otherInvoiceServices.forEach(service => { %>
                             <tr>
-                                <td><%= service.servicename %></td>
-                                <td><%= service.servicedescription %></td>
-                                <td><%= service.trans_Count.toLocaleString() %></td>
-                                <td class="text-center"><%= service.unit_Fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
-                                <td class="text-center"><%= service.total_fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td colspan="2"><%= service.servicename %></td>
+                                <td colspan="3"><%= service.servicedescription %></td>
+                                <td colspan="1"><%= service.trans_Count.toLocaleString() %></td>
+                                <td colspan="1" class="text-center"><%= service.unit_Fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td colspan="1" class="text-center"><%= service.total_fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% if (currency !== 'NGN' && data.includeNairaAmount) { %>
-                                    <td class="text-center"><%= (service.total_fee * data.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                    <td colspan="1" class="text-center"><%= (service.total_fee * data.rate).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% } %>
                             </tr>
                         <% }) %>
