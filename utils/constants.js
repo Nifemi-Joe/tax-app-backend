@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 5000;
 const DB_HOST = process.env.DB_HOST || 'localhost';
 const DB_PORT = process.env.DB_PORT || 6000;
 const DB_NAME = process.env.DB_NAME || 'myapp';
-const DB_URI = `mongodb+srv://nifemijoseph8:YAZkXusPujggRnLa@joecluster.b3hwibu.mongodb.net/?retryWrites=true&w=majority&appName=JoeCluster`;
 
 // Security Settings
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key'; // Must be a strong, unpredictable value
