@@ -83,7 +83,7 @@ const InvoiceSchema = new Schema({
 	clientId: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
 	transactionDate: { type: Date, required: true },
 	transactionDueDate: { type: Date },
-	period: {type: String, enum: ["monthly", "quarterly", "annually"], default: "monthly"},
+	period: {type: String, enum: ["monthly", "quarterly", "annually", "one-off"], default: "monthly"},
 	amountInWords: String,
 	cbnratedate: {
 		type: Date,
