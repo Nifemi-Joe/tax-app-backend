@@ -10,7 +10,6 @@ const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
 const { generatePDF } = require("./utils/pdfGenerator");
 const { getInvoiceData } = require("./controllers/revenueController")
 const sendEmail = require("./utils/emailService");
-const bcrypt = require('bcrypt'); // Add bcrypt for password hashing
 const { User } = require('./models/User'); // Assuming you have a User model
 
 const app = express();
