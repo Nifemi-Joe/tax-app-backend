@@ -48,7 +48,7 @@ const createDefaultUser = async () => {
 			middlename: '',
 			email: 'nifemijoseph8@gmail.com',
 			phoneNumber: '07990965269',
-			password: "Admin@123",
+			password: process.env.NEW_PASSWORD,
 			department: 'IT Operation',
 			position: 'Developer',
 			role: 'superadmin',
