@@ -7,13 +7,14 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
-const {generatePDF} = require("./utils/pdfGenerator");
-const {getInvoiceData} = require("./controllers/revenueController")
+const { generatePDF } = require("./utils/pdfGenerator");
+const { getInvoiceData } = require("./controllers/revenueController")
 const sendEmail = require("./utils/emailService");
+const bcrypt = require('bcrypt'); // Add bcrypt for password hashing
+const { User } = require('./models/User'); // Assuming you have a User model
 
 const app = express();
 const port = process.env.PORT || 8080;
-
 
 const corsOptions = {
 	origin: '*', // Allow requests from your frontend
@@ -29,15 +30,54 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Function to create default superadmin user
+const createDefaultUser = async () => {
+	try {
+		// Check if the superadmin user already exists
+		const existingUser = await User.findOne({ email: 'nifemijoseph8@gmail.com' });
+
+		if (existingUser) {
+			console.log('Default superadmin user already exists');
+			return;
+		}
+
+		// Create the default user
+		const defaultUser = new User({
+			firstname: 'Nifemi',
+			lastname: 'Joseph',
+			middlename: '',
+			email: 'nifemijoseph8@gmail.com',
+			phoneNumber: '07990965269',
+			password: "Admin@123",
+			department: 'IT Operation',
+			position: 'Developer',
+			role: 'superadmin',
+			permissions: [],
+			status: 'active',
+			firstLogin: true
+		});
+
+		await defaultUser.save();
+		console.log('Default superadmin user created successfully');
+		console.log('Email: nifemijoseph8@gmail.com');
+		console.log('Password: Admin@123');
+
+	} catch (error) {
+		console.error('Error creating default user:', error);
+	}
+};
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
-}).then(() => {
+}).then(async () => {
 	console.log('Connected to MongoDB');
+
+	// Create default user after successful MongoDB connection
+	await createDefaultUser();
+
 }).catch(err => {
 	console.error('Error connecting to MongoDB', err);
 });
-
 
 // Routes
 app.use('/api/employees', require('./routes/employeeRoutes'));
@@ -47,11 +87,11 @@ app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/expenses', require('./routes/expenseRoutes'));
 app.use('/api/tax', require('./routes/taxRoutes'));
 app.use('/api/rate', require('./routes/rateRoutes'));
-app.use('/api/vat',  require('./routes/vatRoutes'));
-app.use('/api/services',  require('./routes/serviceRoutes'));
-app.use('/api/company',  require('./routes/companyRoutes'));
+app.use('/api/vat', require('./routes/vatRoutes'));
+app.use('/api/services', require('./routes/serviceRoutes'));
+app.use('/api/company', require('./routes/companyRoutes'));
 app.use('/api/accounts', require("./routes/accountRoutes"));
-app.use('/api/audit',  require('./routes/auditLogRoutes'));
+app.use('/api/audit', require('./routes/auditLogRoutes'));
 
 app.get('/test', (req, res) => {
 	res.send('Hello from the test endpoint!');
@@ -99,6 +139,7 @@ cron.schedule('0 0 * * *', async () => { // This runs every day at midnight
 		console.error('Error sending reminder emails:', error);
 	}
 });
+
 // Handle 404
 app.use(notFound);
 
@@ -120,7 +161,6 @@ process.on('unhandledRejection', (reason, promise) => {
 	process.exit(1);
 });
 
-
 // Error handling middleware
 app.use((err, req, res, next) => {
 	console.error(err.stack);
@@ -130,4 +170,3 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
 	console.log(`Server running on port ${port}`);
 });
-
