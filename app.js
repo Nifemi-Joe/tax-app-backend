@@ -10,7 +10,7 @@ const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
 const { generatePDF } = require("./utils/pdfGenerator");
 const { getInvoiceData } = require("./controllers/revenueController")
 const sendEmail = require("./utils/emailService");
-const { User } = require('./models/User'); // Assuming you have a User model
+const User = require('./models/User'); // Import User model (default export)
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -51,9 +51,25 @@ const createDefaultUser = async () => {
 			department: 'IT Operation',
 			position: 'Developer',
 			role: 'superadmin',
-			permissions: [],
+			permissions: [
+				'create-client',
+				'view-client',
+				'create-employee',
+				'view-employee',
+				'create-expense',
+				'view-expense',
+				'create-invoice',
+				'view-invoice',
+				'create-service',
+				'view-service',
+				'view-tax',
+				'view-vat',
+				'create-vat'
+			],
+			createdBy: 'System',
 			status: 'active',
-			firstLogin: true
+			firstLogin: true,
+			generatedPassword: false
 		});
 
 		await defaultUser.save();
