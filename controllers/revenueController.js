@@ -64,7 +64,7 @@ const generateEmailContent = (role, invoiceData, client) => {
             <h3>Tax Details:</h3>
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
-		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn , 'NGN')) : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd) , 'USD')}</li>
+		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn), 'NGN') : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd) , 'USD')}</li>
 		        <li><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
 		      </ul>
 		
@@ -136,7 +136,7 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
 		      <ul>
 		        <li><strong>VAT Rate:</strong> ${invoiceData.vat}%</li>
 		     	<li><strong>Tax Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency((invoiceData.amountDue-invoiceData.totalInvoiceFee_ngn) , 'USD') : formatCurrency((invoiceData.totalInvoiceFeePlusVat_usd-invoiceData.totalInvoiceFee_usd) , 'USD')}</li>
-		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : invoiceData.totalInvoiceFeePlusVat_usd , 'USD'}</li>
+		        <li style="font-size: 14px; font-weight: 500"><strong>Net Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
 		     </ul>
 		
 		      <h3>Client Details:</h3>
