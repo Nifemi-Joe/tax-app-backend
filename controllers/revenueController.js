@@ -128,7 +128,7 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
               <li><strong>Invoice No:</strong> ${invoiceData.invoiceNo}</li>
               <li><strong>Reference Number:</strong> ${invoiceData.referenceNumber}</li>
               <li><strong>Client:</strong> ${client.name}</li>
-              <li><strong>Amount Due:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.amountDue , 'NGN') : formatCurrency(invoiceData.totalInvoiceFeePlusVat_usd , 'USD')}</li>
+              <li><strong>Amount:</strong> ${invoiceData.currency === 'NGN' ? formatCurrency(invoiceData.totalInvoiceFee_ngn , 'NGN') : formatCurrency(invoiceData.totalInvoiceFee_usd , 'USD')}</li>
               <li><strong>Amount Currency:</strong> ${invoiceData.currency}</li>
               <li><strong>Due Date:</strong> ${new Date(invoiceData.transactionDueDate).toLocaleDateString()}</li>
             </ul>
