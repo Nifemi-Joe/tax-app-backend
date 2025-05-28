@@ -542,12 +542,12 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 	// Send email to client
 	sendEmail(user.email, 'Invoice Created', emailContentClient, "", [attachment]);
 
-	// Send email to backoffice
-	const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
-	backofficeEmails.forEach(user => {
-		const emailContentAdmin = generateEmailContent('admin', combinedObj, existingClient);
-		sendEmail(user.email, 'Invoice Created', emailContentAdmin, "", [attachment]);
-	});
+	// // Send email to backoffice
+	// const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+	// backofficeEmails.forEach(user => {
+	// 	const emailContentAdmin = generateEmailContent('admin', combinedObj, existingClient);
+	// 	sendEmail(user.email, 'Invoice Created', emailContentAdmin, "", [attachment]);
+	// });
 
 	res.status(201).json({
 		responseCode: "00",

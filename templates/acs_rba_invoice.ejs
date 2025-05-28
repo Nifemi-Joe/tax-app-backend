@@ -462,19 +462,10 @@
                             <tr>
                                 <td><%= transaction.description %></td>
                                 <td><%= transaction.volume.toLocaleString() %></td>
-                                <td class="text-center"><%= transaction.unitfee_usd.toLocaleString(("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric"})) %></td>
-                                <td class="text-center"><%= transaction.totalfee_usd.toLocaleString(("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric"}))%></td>
+                                <td class="text-center"><%= transaction.unitfee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+                                <td class="text-center"><%= transaction.totalfee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% if (currency !== 'NGN'  && data.includeNairaAmount) { %>
-                                    <td class="text-center"><%= transaction.totalfee_ngn.toLocaleString(("en-US", {
-                                            year: "numeric",
-                                            month: "long",
-                                            day: "numeric"})) %></td>
+                                    <td class="text-center"><%= transaction.totalfee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                                 <% } %>
                             </tr>
                         <% }) %>
@@ -482,15 +473,9 @@
                         <tfoot>
                         <tr>
                             <td colspan="3" class="font-bold italic">Sub-Total - A</td>
-                            <td class="font-bold italic"><%= data.service1.serviceTotalFeeUsd.toLocaleString(("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric"})) %></td>
+                            <td class="font-bold italic"><%= data.service1.serviceTotalFeeUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                             <% if (data.currency !== 'NGN'  && data.includeNairaAmount) { %>
-                                <td class="font-bold italic"><%= data.service1.serviceTotalFeeNgn.toLocaleString(("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric"})) %></td>
+                                <td class="font-bold italic"><%= data.service1.serviceTotalFeeNgn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                             <% } %>
                         </tr>
                         </tfoot>
@@ -674,7 +659,7 @@
                     <% } else if (data.invoiceType === "OUTSOURCING" || data.invoiceType === "CONSULTATION" || data.invoiceType === "TRAINING" || data.invoiceType === "LICENSE") { %>
                         <td class="font-bold text-right"><%= data.totalInvoiceFee_ngn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                         <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
-                            <td class="font-bold text-right"><%= data.totalInvoiceFee_usd.toLocaleString() %></td>
+                            <td class="font-bold text-right"><%= data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
                         <% } %>
                     <% } %>
                 </tr>
