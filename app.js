@@ -16,7 +16,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 const corsOptions = {
-	origin: 'https://app.globalsjxltd.com/', // Allow requests from your frontend
+	origin: 'https://app.globalsjxltd.com', // Allow requests from your frontend
 	methods: 'GET,POST,PUT,DELETE', // Allowed HTTP methods
 	credentials: true, // Allow credentials (cookies, authorization headers)
 	allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
