@@ -19,8 +19,8 @@ const formatCurrency = (amount, currency) => {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: currency,
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2
+		minimumFractionDigits: 3,
+		maximumFractionDigits: 3
 	}).format(amount);
 };
 

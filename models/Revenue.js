@@ -101,13 +101,13 @@ const InvoiceSchema = new Schema({
 		type: Number,
 		required: true,
 		default: 0,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure amountPaid is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure amountPaid is fixed to 2 decimal places
 	},
 	paymentDate: Date,
 	amountDue: {
 		type: Number,
 		required: true,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure amountDue is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure amountDue is fixed to 2 decimal places
 	},
 	status: { type: String, enum: ['pending', 'paid', 'overdue', 'unpaid', "rejected", "approved"], required: true },
 	reasonForRejection: String,
@@ -119,28 +119,28 @@ const InvoiceSchema = new Schema({
 	otherInvoiceServices: [OtherInvoiceServiceSchema], // Add the OTHER_INVOICES services array
 	totalInvoiceFee_usd: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFee_usd is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure totalInvoiceFee_usd is fixed to 2 decimal places
 	},
 	totalInvoiceFee_ngn: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFee_ngn is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure totalInvoiceFee_ngn is fixed to 2 decimal places
 	},
 	vat: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure vat is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure vat is fixed to 2 decimal places
 	},
 	wht: {
 		type: Number,
 		default: 10,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure wht is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure wht is fixed to 2 decimal places
 	},
 	totalInvoiceFeePlusVat_usd: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFeePlusVat_usd is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure totalInvoiceFeePlusVat_usd is fixed to 2 decimal places
 	},
 	totalInvoiceFeePlusVat_ngn: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure totalInvoiceFeePlusVat_ngn is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure totalInvoiceFeePlusVat_ngn is fixed to 2 decimal places
 	},
 	accountName: { type: String },
 	accountNumber: { type: String },
