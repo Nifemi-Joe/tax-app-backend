@@ -16,7 +16,7 @@ const ServiceSchema = new Schema({
 		},
 		unitfee_usd: {
 			type: Number,
-			set: (value) => parseFloat(value.toFixed(2)) // Ensure unitfee_usd is fixed to 2 decimal places
+			set: (value) => parseFloat(value.toFixed(3)) // Ensure unitfee_usd is fixed to 2 decimal places
 		},
 		totalfee_usd: {
 			type: Number,
@@ -49,7 +49,7 @@ const RoleSchema = new Schema({
 	},
 	unit_fee: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure unit_fee is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure unit_fee is fixed to 2 decimal places
 	},
 	total_fee: {
 		type: Number,
@@ -69,7 +69,7 @@ const OtherInvoiceServiceSchema = new Schema({
 	},
 	unit_Fee: {
 		type: Number,
-		set: (value) => parseFloat(value.toFixed(2)) // Ensure unit_Fee is fixed to 2 decimal places
+		set: (value) => parseFloat(value.toFixed(3)) // Ensure unit_Fee is fixed to 2 decimal places
 	},
 	total_fee: {
 		type: Number,
