@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
 	port: 465,
 	secure: true, // Convert string to boolean
 	auth: {
-		user: process.env.EMAIL_USER,
-		pass: process.env.EMAIL_PASS,
+		user: "globalsjxinfo@gmail.com",
+		pass: "pfnm noqn zeiu hmsi",
 	}
 });
 

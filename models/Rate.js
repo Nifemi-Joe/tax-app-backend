@@ -38,7 +38,7 @@ const rateSchema = new mongoose.Schema({
 // Pre-save hook to ensure 'value' is stored with two decimal places
 rateSchema.pre('save', function (next) {
 	if (this.value !== undefined) {
-		this.value = parseFloat(this.value.toFixed(2));  // Round to two decimal places
+		this.value = parseFloat(this.value.toFixed(3));  // Round to two decimal places
 	}
 	next();
 });
