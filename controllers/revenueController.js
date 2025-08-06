@@ -742,7 +742,7 @@ exports.printInvoice = asyncHandler(async (req, res) => {
 exports.downloadInvoice = asyncHandler(async (req, res, next) => {
 	try {
 		const { id } = req.params;
-
+		console.log(id)
 		// Validate invoice ID
 		if (!mongoose.Types.ObjectId.isValid(id)) {
 			return res.status(400).json({
@@ -778,7 +778,7 @@ exports.downloadInvoice = asyncHandler(async (req, res, next) => {
 		let newDate = new Date(invoice.transactionDate);
 		newDate.setDate(newDate.getDate() + 14);
 
-		// Calculate total with VAT if applicable
+		// Calculate total with VAT if applicable (same as update function)
 		const totalInvoiceFeePlusVat_usd = invoice.taxOption ?
 			invoice.totalInvoiceFee_usd + (invoice.totalInvoiceFee_usd * invoice.vat / 100) :
 			invoice.totalInvoiceFee_usd;
@@ -786,18 +786,23 @@ exports.downloadInvoice = asyncHandler(async (req, res, next) => {
 			invoice.totalInvoiceFee_ngn + (invoice.totalInvoiceFee_ngn * invoice.vat / 100) :
 			invoice.totalInvoiceFee_ngn;
 
-		// Generate PDF
+		// Update the invoice object with calculated values (same as update function)
+		const updatedInvoiceData = {
+			...invoice.toObject(),
+			totalInvoiceFeePlusVat_ngn,
+			totalInvoiceFeePlusVat_usd
+		};
+
+		console.log('Generating PDF for invoice:', invoice.invoiceNo);
+
+		// Generate PDF using the exact same data structure as update function
 		const pdfInvoice = await pdfGenerate({
 			invoiceType: invoice.invoiceType,
 			transactionDate: invoice.transactionDate.toLocaleDateString(),
 			invoiceNo: invoice.invoiceNo,
 			transactionDueDate: newDate.toLocaleDateString(),
 			currency: invoice.currency,
-			data: {
-				...invoice.toObject(),
-				totalInvoiceFeePlusVat_ngn,
-				totalInvoiceFeePlusVat_usd
-			},
+			data: updatedInvoiceData, // Use the updated data object
 			phone: existingClient.phone,
 			name: existingClient.name,
 			clientname: existingClient.name,
@@ -809,21 +814,35 @@ exports.downloadInvoice = asyncHandler(async (req, res, next) => {
 			taxNumber: "10582697-0001"
 		}, "acs_rba_invoice.ejs");
 
+		console.log('PDF generated successfully, buffer length:', pdfInvoice.length);
+
+		// Verify PDF buffer is valid
+		if (!pdfInvoice || pdfInvoice.length === 0) {
+			throw new Error('PDF generation failed - empty buffer');
+		}
+
 		// Set response headers for PDF download
 		res.setHeader('Content-Type', 'application/pdf');
 		res.setHeader('Content-Disposition', `attachment; filename="Invoice_${invoice.invoiceNo}.pdf"`);
 		res.setHeader('Content-Length', pdfInvoice.length);
+		res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+		res.setHeader('Pragma', 'no-cache');
+		res.setHeader('Expires', '0');
 
 		// Send the PDF buffer
-		res.send(pdfInvoice);
+		res.end(pdfInvoice);
 
 	} catch (error) {
 		console.error('Download invoice error:', error);
-		res.status(500).json({
-			success: false,
-			responseCode: "01",
-			responseMessage: 'Internal server error'
-		});
+
+		// Make sure we don't send headers twice
+		if (!res.headersSent) {
+			res.status(500).json({
+				success: false,
+				responseCode: "01",
+				responseMessage: 'Internal server error: ' + error.message
+			});
+		}
 	}
 });
 

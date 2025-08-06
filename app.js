@@ -73,9 +73,6 @@ const createDefaultUser = async () => {
 		});
 
 		await defaultUser.save();
-		console.log('Default superadmin user created successfully');
-		console.log('Email: nifemijoseph8@gmail.com');
-		console.log('Password: Admin@123');
 
 	} catch (error) {
 		console.error('Error creating default user:', error);

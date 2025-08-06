@@ -28,7 +28,7 @@ router.put('/updateInvoice/:id', protect,authorize('superadmin', 'admin', 'backO
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
 router.get('/printInvoice/:id', protect, printInvoice);
-router.get('/downloadInvoice/:id', protect,validateObjectId('id'), downloadInvoice);
+router.get('/downloadInvoice/:id',validateObjectId('id'), downloadInvoice);
 
 // @desc    Spool invoices based on filters
 // @route   GET /api/revenue/spoolInvoices
