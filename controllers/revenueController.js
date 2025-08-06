@@ -738,30 +738,93 @@ exports.printInvoice = asyncHandler(async (req, res) => {
 	}
 });
 
-exports.downloadInvoice = asyncHandler(async (req, res) => {
-	const { id } = req.params;
+// Backend function to download invoice PDF
+exports.downloadInvoice = asyncHandler(async (req, res, next) => {
+	try {
+		const { id } = req.params;
 
-	// Fetch the invoice from the database
-	const invoice = await Revenue.findById(id);
-	if (!invoice) {
-		return res.status(404).json({ success: false, error: 'Invoice not found' });
+		// Validate invoice ID
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({
+				success: false,
+				responseCode: "22",
+				responseMessage: 'Invalid invoice ID'
+			});
+		}
+
+		// Find the invoice
+		const invoice = await Revenue.findById(id);
+		if (!invoice) {
+			return res.status(404).json({
+				success: false,
+				responseCode: "22",
+				responseMessage: 'Invoice not found'
+			});
+		}
+
+		// Find client and account details
+		const existingClient = await Client.findById(invoice.clientId);
+		if (!existingClient) {
+			return res.status(404).json({
+				success: false,
+				responseCode: "22",
+				responseMessage: 'Client not found'
+			});
+		}
+
+		const existingAccount = await Account.findOne({ _id: existingClient.account });
+
+		// Calculate due date (14 days from transaction date)
+		let newDate = new Date(invoice.transactionDate);
+		newDate.setDate(newDate.getDate() + 14);
+
+		// Calculate total with VAT if applicable
+		const totalInvoiceFeePlusVat_usd = invoice.taxOption ?
+			invoice.totalInvoiceFee_usd + (invoice.totalInvoiceFee_usd * invoice.vat / 100) :
+			invoice.totalInvoiceFee_usd;
+		const totalInvoiceFeePlusVat_ngn = invoice.taxOption ?
+			invoice.totalInvoiceFee_ngn + (invoice.totalInvoiceFee_ngn * invoice.vat / 100) :
+			invoice.totalInvoiceFee_ngn;
+
+		// Generate PDF
+		const pdfInvoice = await pdfGenerate({
+			invoiceType: invoice.invoiceType,
+			transactionDate: invoice.transactionDate.toLocaleDateString(),
+			invoiceNo: invoice.invoiceNo,
+			transactionDueDate: newDate.toLocaleDateString(),
+			currency: invoice.currency,
+			data: {
+				...invoice.toObject(),
+				totalInvoiceFeePlusVat_ngn,
+				totalInvoiceFeePlusVat_usd
+			},
+			phone: existingClient.phone,
+			name: existingClient.name,
+			clientname: existingClient.name,
+			email: existingClient.email,
+			accountName: existingAccount ? existingAccount.accountName : '',
+			accountNumber: existingAccount ? existingAccount.accountNumber : '',
+			bankName: existingAccount ? existingAccount.bankName : '',
+			taxName: "Global SJX Limited",
+			taxNumber: "10582697-0001"
+		}, "acs_rba_invoice.ejs");
+
+		// Set response headers for PDF download
+		res.setHeader('Content-Type', 'application/pdf');
+		res.setHeader('Content-Disposition', `attachment; filename="Invoice_${invoice.invoiceNo}.pdf"`);
+		res.setHeader('Content-Length', pdfInvoice.length);
+
+		// Send the PDF buffer
+		res.send(pdfInvoice);
+
+	} catch (error) {
+		console.error('Download invoice error:', error);
+		res.status(500).json({
+			success: false,
+			responseCode: "01",
+			responseMessage: 'Internal server error'
+		});
 	}
-
-	// Set the path to the invoice HTML template (EJS file)
-	const templatePath = path.join(__dirname, '../templates/acs_rba_invoice.ejs');
-	const htmlContent = await ejs.renderFile(templatePath, {invoice});
-
-	// Options for generating PDF
-	const options = { format: 'A4' };
-	// Render the invoice data into the template
-	const pdfBuffer = await htmlPdf.generatePdf({ content: htmlContent }, options);
-
-	// Set the headers for downloading the file
-	res.setHeader('Content-Disposition', `attachment; filename=invoice_${invoice.invoiceNo}.pdf`);
-	res.setHeader('Content-Type', 'application/pdf');
-
-	// Send the PDF as the response
-	res.send(pdfBuffer);
 });
 
 // @desc    Spool invoices based on filters (client-wise, monthly, quarterly, yearly)

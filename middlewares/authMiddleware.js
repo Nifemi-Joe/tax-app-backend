@@ -15,8 +15,9 @@ const protect = asyncHandler(async (req, res, next) => {
 			token = req.headers.authorization.split(' ')[1];
 
 			const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+			console.log(decoded.id)
 			req.user = await User.findById(decoded.id).select('-password');
+			console.log(req.user)
 			if (!req.user) {
 				res.status(200).json({
 					responseCode: "22",
@@ -48,6 +49,7 @@ const protect = asyncHandler(async (req, res, next) => {
 // Authorization based on roles
 const authorize = (...roles) => {
 	return (req, res, next) => {
+		console.log(req.user.role)
 		if (!roles.includes(req.user.role)) {
 			res.status(200).json({
 				responseCode: "22",
