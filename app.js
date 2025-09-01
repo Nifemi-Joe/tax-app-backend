@@ -26,8 +26,8 @@ app.use(cors(corsOptions))
 
 // Middleware
 app.use(helmet());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 // Increase body parser limits to handle large file uploads
 app.use(express.json({
 	limit: '50mb',  // Increase from default 1mb to 50mb

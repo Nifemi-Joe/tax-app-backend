@@ -6,7 +6,7 @@ const expenseSchema = new mongoose.Schema(
 		description: {
 			type: String,
 			trim: true,
-			maxlength: [500, 'Description cannot be more than 500 characters'],
+			maxlength: [5000, 'Description cannot be more than 500 characters'],
 		},
 		companyId: {
 			type: mongoose.Schema.Types.ObjectId,
