@@ -34,12 +34,19 @@ const errorHandler = (err, req, res, next) => {
 		statusCode = err.statusCode;
 		message = err.message;
 	}
+	if (err.code === 11000) {
+		message = 'Duplicate field value entered';
+	}
 	if (err.name === 'JsonWebTokenError') {
 		message = 'Not authorized, token failed';
 	}
 
 	if (err.name === 'TokenExpiredError') {
 		message = 'Not authorized, token expired';
+	}
+
+	if (err.type === 'entity.too.large' || err.name === 'PayloadTooLargeError') {
+		message = 'File too large. Please reduce file size and try again.';
 	}
 
 	// Prevent sending headers if response is already sent
@@ -49,7 +56,7 @@ const errorHandler = (err, req, res, next) => {
 
 	// Response
 	res.status(statusCode).json({
-		responseCode: statusCode === 200 ? "00" : "22",
+		responseCode: statusCode === 200 ? "00" : "99",
 		responseMessage: message,
 		stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
 	});

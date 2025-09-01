@@ -7,35 +7,95 @@ const logAction = require("../utils/auditLogger");
 // @desc    Create a new expense
 // @route   POST /api/expenses
 // @access  Private
+const getBase64FileSize = (base64String) => {
+	if (!base64String) return 0;
+
+	// Remove data URL prefix if present
+	const base64Data = base64String.split(',')[1] || base64String;
+
+	// Calculate approximate file size in bytes
+	const padding = (base64Data.match(/=/g) || []).length;
+	return (base64Data.length * 3 / 4) - padding;
+};
+
 exports.createExpense = asyncHandler(async (req, res) => {
+	// Validation checks
 	await check('amount', 'Amount must be a positive number').isFloat({ min: 0 }).run(req);
 	await check('category', 'Category is required').not().isEmpty().run(req);
 	await check('date', 'Date is required').isISO8601().run(req);
 
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
-		return res.status(400).json({ errors: errors.array() });
+		return res.status(400).json({
+			responseCode: "24",
+			responseMessage: "Validation failed",
+			errors: errors.array()
+		});
 	}
 
-	const expenseData = req.body;
+	// Validate file sizes (max 10MB each)
+	const maxFileSize = 10 * 1024 * 1024; // 10MB in bytes
 
-	const expense = await Expense.create({...expenseData, createdBy: req.user._id, companyId: req.user.companyId, status: "created"});
+	if (req.body.image) {
+		const imageSize = getBase64FileSize(req.body.image);
+		if (imageSize > maxFileSize) {
+			return res.status(413).json({
+				responseCode: "25",
+				responseMessage: "Expense image file too large. Maximum size is 10MB."
+			});
+		}
+	}
 
-	if (expense) {
-		res.status(201).json({
-			responseCode: "00",
-			responseMessage: "Expense added successfully!",
-			responseData: expense
-		});
-	} else {
-		res.status(400).json(
-			{
+	if (req.body.receipt) {
+		const receiptSize = getBase64FileSize(req.body.receipt);
+		if (receiptSize > maxFileSize) {
+			return res.status(413).json({
+				responseCode: "26",
+				responseMessage: "Receipt file too large. Maximum size is 10MB."
+			});
+		}
+	}
+
+	try {
+		const expenseData = {
+			...req.body,
+			createdBy: req.user._id,
+			companyId: req.user.companyId,
+			status: "created"
+		};
+
+		const expense = await Expense.create(expenseData);
+
+		if (expense) {
+			// Log the action
+			const user = await User.findById(req.user._id);
+			await logAction(
+				req.user._id,
+				user.name || `${user.firstname} ${user.lastname}`,
+				'created_expense',
+				"Expense Management",
+				`Created expense ${expense.description} by ${user.email}`,
+				req.body.ip || req.ip
+			);
+
+			res.status(201).json({
+				responseCode: "00",
+				responseMessage: "Expense added successfully!",
+				responseData: expense
+			});
+		} else {
+			res.status(400).json({
 				responseCode: "24",
 				responseMessage: "Invalid expense data"
-			})
+			});
+		}
+	} catch (error) {
+		console.error('Create expense error:', error);
+		res.status(500).json({
+			responseCode: "99",
+			responseMessage: "Failed to create expense. Please try again."
+		});
 	}
-	const user = await User.findById(req.user._id,); // Assuming you have a User model
-	await logAction(req.user._id || expense.createdBy, user.name || user.firstname + " " + user.lastname, 'created_expense', "Expense Management", `Created expense ${expense.description} by ${user.email}`, req.body.ip );
 });
 
 // @desc    Update an existing expense

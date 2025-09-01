@@ -28,6 +28,17 @@ app.use(cors(corsOptions))
 app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+// Increase body parser limits to handle large file uploads
+app.use(express.json({
+	limit: '50mb',  // Increase from default 1mb to 50mb
+	extended: true
+}));
+
+app.use(express.urlencoded({
+	limit: '50mb',  // Also increase for URL-encoded data
+	extended: true
+}));
+
 
 // Function to create default superadmin user
 const createDefaultUser = async () => {

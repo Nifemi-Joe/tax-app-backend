@@ -62,12 +62,12 @@ const expenseSchema = new mongoose.Schema(
 		receipt: {
 			type: String,
 			trim: true,
-			maxlength: [500, 'Receipt URL cannot be more than 500 characters'],
+			maxlength: [2000000, 'Receipt URL cannot be more than 500 characters'],
 		},
 		image: {
 			type: String,
 			trim: true,
-			maxlength: [100000, 'Image cannot be more than 100000 characters'],
+			maxlength: [2000000, 'Image cannot be more than 100000 characters'],
 		},
 		createdBy: {
 			type: String,
