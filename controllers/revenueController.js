@@ -13,7 +13,7 @@ const asyncHandler = require('express-async-handler');
 const ejs = require("ejs");
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
-const sendEmail = require("../utils/emailService");
+const { sendEmail } = require("../utils/emailService");
 const Account = require("../models/Account");
 const formatCurrency = (amount, currency) => {
 	return new Intl.NumberFormat('en-US', {
