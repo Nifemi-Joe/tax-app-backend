@@ -4,7 +4,7 @@ require('dotenv').config();
 // Try multiple port/security configurations
 const SMTP_CONFIGS = [
 	{
-		host: "webmail.globalsjxltd.com",
+		host: "smtp.mailhostbox.com",
 		port: 587,
 		secure: false, // Use TLS
 		auth: {
