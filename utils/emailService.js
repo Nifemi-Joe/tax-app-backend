@@ -19,7 +19,7 @@ const SMTP_CONFIGS = [
 		socketTimeout: 10000
 	},
 	{
-		host: "webmail.globalsjxltd.com",
+		host: "smtp.mailhostbox.com",
 		port: 465,
 		secure: true, // Use SSL
 		auth: {
