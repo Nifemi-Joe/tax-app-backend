@@ -38,6 +38,27 @@ class EmailService {
 		// Handle array of email addresses
 		const recipients = Array.isArray(to) ? to : [to];
 
+		// Prepare attachments for SendGrid
+		const sendGridAttachments = attachments.map(att => {
+			// Convert Buffer to base64 string if content is a Buffer
+			let content;
+			if (Buffer.isBuffer(att.content)) {
+				content = att.content.toString('base64');
+			} else if (typeof att.content === 'string') {
+				// If it's already a string, assume it's base64
+				content = att.content;
+			} else {
+				throw new Error('Attachment content must be a Buffer or base64 string');
+			}
+
+			return {
+				content: content,
+				filename: att.filename || 'attachment.pdf',
+				type: att.type || 'application/pdf',
+				disposition: att.disposition || 'attachment'
+			};
+		});
+
 		const msg = {
 			to: recipients,
 			from: {
@@ -47,18 +68,14 @@ class EmailService {
 			subject,
 			text: text || '',
 			html: html || text || '',
-			attachments: attachments.map(att => ({
-				content: att.content,
-				filename: att.filename,
-				type: att.type,
-				disposition: 'attachment'
-			}))
+			attachments: sendGridAttachments
 		};
 
 		try {
 			console.log('📤 Sending email via SendGrid...');
 			console.log(`  To: ${recipients.join(', ')}`);
 			console.log(`  Subject: ${subject}`);
+			console.log(`  Attachments: ${attachments.length}`);
 
 			const [response] = await sgMail.send(msg);
 
@@ -90,7 +107,6 @@ class EmailService {
 			};
 		}
 	}
-
 	/**
 	 * Send welcome email template
 	 */
