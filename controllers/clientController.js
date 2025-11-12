@@ -7,7 +7,7 @@ const { check, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
 const logAction = require('../utils/auditLogger');
 const AuditLog = require('../models/AuditLog');
-const sendEmail = require("../utils/emailService");
+const emailService = require('../utils/emailService');
 
 // @desc    Create a new client
 // @route   POST /api/clients
@@ -212,9 +212,9 @@ exports.createClient = asyncHandler(async (req, res) => {
             </body>
             </html>
             `;
-			await sendEmail(admin.email, 'New Client Created - Activate Now', emailAdminContent);
+			await emailService.sendEmail(admin.email, 'New Client Created - Activate Now', emailAdminContent);
 		});
-		await sendEmail(user.email, 'New Client Created', emailFrontOfficeContent);
+		await emailService.sendEmail(user.email, 'New Client Created', emailFrontOfficeContent);
 
 		// Respond back to the front-end
 		res.status(201).json({

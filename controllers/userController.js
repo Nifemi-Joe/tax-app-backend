@@ -7,7 +7,7 @@ const asyncHandler = require('express-async-handler');
 const { logger } = require('../utils/logger');
 const logAction = require("../utils/auditLogger");
 const Service = require("../models/Service");
- const sendEmail = require("../utils/emailService");
+const emailService = require('../utils/emailService');
 
  function generateRandomPassword(length = 12) {
 	 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
@@ -140,13 +140,13 @@ exports.userRegister = asyncHandler(async (req, res) => {
 			`;
 
 
-			sendEmail(req.user.email, "New User Creation Successful", adminEmailContent);
+			emailService.sendEmail(req.user.email, "New User Creation Successful", adminEmailContent);
 
 			// 2. Email to all admins notifying the creation of the user
 			const admins = await User.find({ role: { $in: ['superadmin', 'admin'] } }); // Get all admins
 			const adminEmails = admins.map(admin => admin.email);
 
-			adminEmails.forEach(email => sendEmail(email, "New User Created", adminEmailContent));
+			adminEmails.forEach(email => emailService.sendEmail(email, "New User Created", adminEmailContent));
 
 			// 3. Email to the newly created user with the random password and change password link
 			const userEmailContent = `
@@ -218,7 +218,7 @@ exports.userRegister = asyncHandler(async (req, res) => {
       </html>
     `;
 
-			sendEmail(user.email, "Welcome to GSJX LTD", userEmailContent);
+			emailService.sendEmail(user.email, "Welcome to GSJX LTD", userEmailContent);
 		}
 
 
@@ -336,7 +336,7 @@ exports.userRegister = asyncHandler(async (req, res) => {
 				 responseData: user,
 				 token,
 			 });
-			 await sendEmail(user.email, "Welcome Back to GSJX LTD", emailContent);
+			 await emailService.sendEmail(user.email, "Welcome Back to GSJX LTD", emailContent);
 		 }
 		 else {
 			 res.status(401).json({
@@ -465,7 +465,7 @@ exports.getProfileUser = asyncHandler(async (req, res) => {
     `;
 
 		 // Send the email
-		 await sendEmail(user.email, 'Password Reset Confirmation', emailContent);
+		 await emailService.sendEmail(user.email, 'Password Reset Confirmation', emailContent);
 
 		 res.status(200).json({ responseMessage: 'Password reset successfully and email sent to the user.', responseCode: "00" });
 	 } catch (error) {
@@ -537,7 +537,7 @@ exports.getProfileUser = asyncHandler(async (req, res) => {
 
     // Send the email
 		 console.log(user.email)
-    await sendEmail(user.email, "Password Reset", emailContent);
+    await emailService.sendEmail(user.email, "Password Reset", emailContent);
 
     res.status(200).json({ responseMessage: "Password reset successfully and sent to the user.", responseCode: "00" });
   } catch (error) {

@@ -8,8 +8,7 @@ const WHT = require('../models/WHT'); // Import the WHT model
 const Client = require("../models/Client");
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
-const sendEmail = require("../utils/emailService");
-
+const emailService = require('../utils/emailService');
 const generateEmailContent = (taxes, totalAmount, role) => {
 	let taxDetails = taxes
 		.map(
@@ -293,11 +292,11 @@ exports.payTax = asyncHandler(async (req, res) => {
 	const emailContentForAdmin = generateEmailContent(taxes, totalAmount, 'admin');
 
 	// Send emails
-	await sendEmail(user.email, 'Tax Payment Confirmation', emailContentForUser);
+	await emailService.sendEmail(user.email, 'Tax Payment Confirmation', emailContentForUser);
 	const admins = await User.find({ role: { $in: ['superadmin', 'admin'] } }); // Get all admins
 	const adminEmails = admins.map(admin => admin.email);
 
-	adminEmails.forEach(email => sendEmail(email, 'Tax Payment Notification', emailContentForAdmin));
+	adminEmails.forEach(email => emailService.sendEmail(email, 'Tax Payment Notification', emailContentForAdmin));
 
 	res.status(200).json({ responseMessage: 'Taxes paid successfully!', responseData: totalAmount, responseCode: "00" });
 });

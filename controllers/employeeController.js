@@ -4,8 +4,7 @@ const { check, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
 const logAction = require("../utils/auditLogger");
 const User = require("../models/User");
-const sendEmail = require("../utils/emailService");
-const crypto = require('crypto');
+const emailService = require('../utils/emailService');
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
 
@@ -156,7 +155,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
     </body>
     </html>
   `;
-		await sendEmail(email, 'Welcome to GSJX LTD', emailContent);
+		await emailService.sendEmail(email, 'Welcome to GSJX LTD', emailContent);
 		const frontOfficeContent = `
 		<!DOCTYPE html>
 		<html lang="en">
@@ -190,7 +189,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		const admins = await User.find({ role: { $in: ['admin', "superadmin"] } });
 		console.log(admins)
 		admins.forEach(async (admin) => {
-			await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
+			await emailService.sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
 		})
 		await logAction(req.user._id || "Admin", user.name || user.firstname + " " + user.lastname, 'created_employee', "Employee Management", `Created employee ${email} by ${req.user.email}`, req.body.ip )
 		return res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
@@ -302,7 +301,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
     </body>
     </html>
   `;
-		await sendEmail(email, 'Welcome to GSJX LTD', emailContent);
+		await emailService.sendEmail(email, 'Welcome to GSJX LTD', emailContent);
 		const frontOfficeContent = `
 		<!DOCTYPE html>
 		<html lang="en">
@@ -336,7 +335,7 @@ exports.createEmployee = asyncHandler(async (req, res) => {
 		const admins = await User.find({ role: { $in: ['admin', "superadmin"] } });
 		console.log(admins)
 		admins.forEach(async (admin) => {
-			await sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
+			await emailService.sendEmail(admin.email, 'New Employee Creation', frontOfficeContent);
 		})
 		await logAction(req.user._id || "Admin", user.name || user.firstname + " " + user.lastname, 'created_employee', "Employee Management", `Created employee ${email} by ${req.user.email}`, req.body.ip )
 		return res.status(201).json({ responseMessage: 'Employee created successfully.', responseData: newemployee, responseCode: "00" });
