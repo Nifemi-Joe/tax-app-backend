@@ -1,267 +1,310 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
-// MailHostBox-specific SMTP configurations
-const SMTP_CONFIGS = [
-	{
-		// Primary: MailHostBox SMTP with STARTTLS (Most reliable)
-		host: "smtp.mailhostbox.com",
-		port: 587,
-		secure: false,
-		requireTLS: true,
-		auth: {
-			user: process.env.EMAIL_USER,
-			pass: process.env.EMAIL_PASS,
-		},
-		tls: {
-			ciphers: 'SSLv3',
-			rejectUnauthorized: false
-		},
-		connectionTimeout: 15000,
-		greetingTimeout: 15000,
-		socketTimeout: 15000
-	},
-	{
-		// Alternative: SSL/TLS on port 465
-		host: "smtp.mailhostbox.com",
-		port: 465,
-		secure: true,
-		auth: {
-			user: process.env.EMAIL_USER,
-			pass: process.env.EMAIL_PASS,
-		},
-		tls: {
-			ciphers: 'SSLv3',
-			rejectUnauthorized: false
-		},
-		connectionTimeout: 15000,
-		greetingTimeout: 15000,
-		socketTimeout: 15000
-	},
-	{
-		// Fallback: Port 2525 (some hosts block 587/465)
-		host: "smtp.mailhostbox.com",
-		port: 2525,
-		secure: false,
-		requireTLS: true,
-		auth: {
-			user: process.env.EMAIL_USER,
-			pass: process.env.EMAIL_PASS,
-		},
-		tls: {
-			ciphers: 'SSLv3',
-			rejectUnauthorized: false
-		},
-		connectionTimeout: 15000,
-		greetingTimeout: 15000,
-		socketTimeout: 15000
-	}
-];
+// Initialize SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-let transporter;
-let workingConfig = null;
-let isInitializing = false;
-let initializePromise = null;
+class EmailService {
+	constructor() {
+		this.fromEmail = process.env.FROM_EMAIL || 'itbiz@globalsjxltd.com';
+		this.companyName = process.env.COMPANY_NAME || 'Global SJX Ltd';
+		this.isInitialized = !!process.env.SENDGRID_API_KEY;
 
-const initializeTransporter = async () => {
-	if (isInitializing && initializePromise) {
-		return initializePromise;
+		if (!this.isInitialized) {
+			console.warn('⚠ SendGrid API key not found. Emails will not be sent.');
+		} else {
+			console.log('✓ SendGrid initialized successfully');
+		}
 	}
 
-	isInitializing = true;
-	initializePromise = (async () => {
-		console.log('🔄 Initializing email transporter...');
-
-		for (let i = 0; i < SMTP_CONFIGS.length; i++) {
-			try {
-				console.log(`Testing config ${i + 1}: ${SMTP_CONFIGS[i].host}:${SMTP_CONFIGS[i].port}`);
-				const testTransporter = nodemailer.createTransport(SMTP_CONFIGS[i]);
-
-				await testTransporter.verify();
-
-				console.log(`✓ Email server connected successfully!`);
-				console.log(`  Host: ${SMTP_CONFIGS[i].host}`);
-				console.log(`  Port: ${SMTP_CONFIGS[i].port}`);
-				console.log(`  Secure: ${SMTP_CONFIGS[i].secure}`);
-
-				transporter = testTransporter;
-				workingConfig = SMTP_CONFIGS[i];
-				isInitializing = false;
-				return;
-			} catch (error) {
-				console.error(`✗ Config ${i + 1} failed: ${error.message}`);
-				if (error.code === 'EAUTH') {
-					console.error('  → Authentication failed. Check EMAIL_USER and EMAIL_PASS');
-				}
-				if (error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION') {
-					console.error('  → Connection timeout. Port may be blocked');
-				}
-			}
+	/**
+	 * Sends an email using SendGrid
+	 * @param {string|string[]} to - Recipient email(s)
+	 * @param {string} subject - Email subject
+	 * @param {string} text - Plain text content
+	 * @param {string} html - HTML content
+	 * @param {Array} attachments - Email attachments
+	 */
+	async sendEmail(to, subject, text, html, attachments = []) {
+		if (!this.isInitialized) {
+			console.error('❌ SendGrid not initialized. Check SENDGRID_API_KEY environment variable.');
+			return {
+				success: false,
+				error: 'SendGrid not configured',
+				code: 'ENOTCONFIG'
+			};
 		}
 
-		console.warn('⚠ No config verified successfully. Using first config as fallback.');
-		transporter = nodemailer.createTransport(SMTP_CONFIGS[0]);
-		isInitializing = false;
-	})();
+		// Handle array of email addresses
+		const recipients = Array.isArray(to) ? to : [to];
 
-	return initializePromise;
-};
-
-// Initialize on module load
-initializeTransporter().catch(err => {
-	console.error('❌ Failed to initialize email configuration:', err);
-	transporter = nodemailer.createTransport(SMTP_CONFIGS[0]);
-	isInitializing = false;
-});
-
-/**
- * Sends an email with the specified options.
- * @param {string|string[]} to - Recipient email(s)
- * @param {string} subject - Email subject
- * @param {string} text - Plain text content
- * @param {string} html - HTML content
- * @param {Array} attachments - Email attachments
- */
-const sendEmail = async (to, subject, text, html, attachments = []) => {
-	// Ensure transporter is initialized
-	if (!transporter) {
-		console.log('⏳ Transporter not ready, initializing...');
-		await initializeTransporter();
-	}
-
-	// Handle array of email addresses
-	const recipients = Array.isArray(to) ? to.join(', ') : to;
-
-	const mailOptions = {
-		from: `"Global SJX Ltd" <${process.env.EMAIL_USER}>`,
-		to: recipients,
-		subject,
-		text,
-		html: html || text,
-		attachments,
-	};
-
-	try {
-		const info = await transporter.sendMail(mailOptions);
-		console.log('✓ Email sent successfully');
-		console.log(`  To: ${recipients}`);
-		console.log(`  Subject: ${subject}`);
-		console.log(`  Message ID: ${info.messageId}`);
-		return info;
-	} catch (error) {
-		console.error('✗ Failed to send email');
-		console.error(`  To: ${recipients}`);
-		console.error(`  Error: ${error.message}`);
-
-		// Detailed error diagnostics
-		if (error.code === 'ETIMEDOUT') {
-			console.error('  → Connection timeout occurred');
-			console.error('  → Check if Render.com allows outgoing SMTP connections');
-			console.error('  → Consider whitelisting Render IP on MailHostBox');
-		} else if (error.code === 'EAUTH') {
-			console.error('  → Authentication failed');
-			console.error('  → Verify EMAIL_USER and EMAIL_PASS in environment variables');
-		} else if (error.code === 'EENVELOPE') {
-			console.error('  → Invalid email address format');
-		}
-
-		// Return error object instead of throwing to prevent request failure
-		return {
-			success: false,
-			error: error.message,
-			code: error.code
+		const msg = {
+			to: recipients,
+			from: {
+				email: this.fromEmail,
+				name: this.companyName,
+			},
+			subject,
+			text: text || '',
+			html: html || text || '',
+			attachments: attachments.map(att => ({
+				content: att.content,
+				filename: att.filename,
+				type: att.type,
+				disposition: 'attachment'
+			}))
 		};
+
+		try {
+			console.log('📤 Sending email via SendGrid...');
+			console.log(`  To: ${recipients.join(', ')}`);
+			console.log(`  Subject: ${subject}`);
+
+			const [response] = await sgMail.send(msg);
+
+			console.log('✓ Email sent successfully via SendGrid');
+			console.log(`  Status: ${response.statusCode}`);
+			console.log(`  Message ID: ${response.headers['x-message-id']}`);
+
+			return {
+				success: true,
+				messageId: response.headers['x-message-id'],
+				statusCode: response.statusCode
+			};
+		} catch (error) {
+			console.error('✗ SendGrid email failed');
+			console.error(`  To: ${recipients.join(', ')}`);
+			console.error(`  Error: ${error.message}`);
+
+			// Detailed error diagnostics
+			if (error.response) {
+				const { body } = error.response;
+				console.error(`  SendGrid Error: ${JSON.stringify(body)}`);
+			}
+
+			return {
+				success: false,
+				error: error.message,
+				code: error.code,
+				details: error.response?.body
+			};
+		}
 	}
-};
 
-/**
- * Fetches emails from the inbox using IMAP
- */
-const Imap = require('imap');
-const { simpleParser } = require('mailparser');
+	/**
+	 * Send welcome email template
+	 */
+	async sendWelcomeEmail(to, userName) {
+		const subject = `Welcome to ${this.companyName}!`;
+		const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #4F46E5; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { padding: 30px; background: #f9f9f9; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; background: #fff; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+          .button { display: inline-block; padding: 12px 24px; background: #4F46E5; color: white; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Welcome to ${this.companyName}!</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${userName},</h2>
+            <p>Thank you for joining our platform. We're excited to have you on board!</p>
+            <p>Get started by exploring our features and connecting with others.</p>
+            <p>If you have any questions, feel free to reply to this email.</p>
+            <p style="text-align: center;">
+              <a href="https://yourplatform.com/dashboard" class="button">Get Started</a>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${this.companyName}. All rights reserved.</p>
+            <p>This email was sent from our secure notification system.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-// MailHostBox IMAP configuration
-const imapConfig = {
-	user: process.env.EMAIL_USER,
-	password: process.env.EMAIL_PASS,
-	host: 'imap.mailhostbox.com', // Use MailHostBox IMAP server
-	port: 993,
-	tls: true,
-	tlsOptions: {
-		rejectUnauthorized: false,
-		minVersion: 'TLSv1'
-	},
-	connTimeout: 15000,
-	authTimeout: 15000
-};
+		const text = `Welcome to ${this.companyName}! Hello ${userName}, Thank you for joining our platform. We're excited to have you on board! Get started by exploring our features and connecting with others.`;
 
-const receiveEmails = (limit = 10) => {
-	return new Promise((resolve, reject) => {
-		console.log('📧 Connecting to IMAP server...');
-		const imap = new Imap(imapConfig);
-		const emails = [];
+		return this.sendEmail(to, subject, text, html);
+	}
 
-		imap.once('ready', () => {
-			console.log('✓ IMAP connected successfully');
-			imap.openBox('INBOX', false, (err, box) => {
-				if (err) {
-					console.error('✗ Failed to open INBOX:', err.message);
-					reject(err);
-					return;
-				}
+	/**
+	 * Send group invitation email
+	 */
+	async sendGroupInvitation(to, groupName, inviterName, groupId) {
+		const subject = `You've been invited to join ${groupName}`;
+		const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #10B981; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { padding: 30px; background: #f9f9f9; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; background: #fff; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+          .button { display: inline-block; padding: 12px 24px; background: #10B981; color: white; text-decoration: none; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Group Invitation</h1>
+          </div>
+          <div class="content">
+            <h2>Hello,</h2>
+            <p><strong>${inviterName}</strong> has invited you to join the group <strong>"${groupName}"</strong>.</p>
+            <p>Join the group to connect with members and participate in discussions.</p>
+            <p style="text-align: center;">
+              <a href="https://yourplatform.com/groups/${groupId}" class="button">View Group</a>
+            </p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${this.companyName}. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-				console.log(`📬 Fetching last ${limit} emails...`);
-				const fetchRange = `${Math.max(1, box.messages.total - limit + 1)}:*`;
+		const text = `Group Invitation: ${inviterName} has invited you to join the group "${groupName}". Join at: https://yourplatform.com/groups/${groupId}`;
 
-				const f = imap.seq.fetch(fetchRange, {
-					bodies: '',
-					struct: true
-				});
+		return this.sendEmail(to, subject, text, html);
+	}
 
-				f.on('message', (msg) => {
-					msg.on('body', (stream) => {
-						simpleParser(stream, (err, parsed) => {
-							if (err) {
-								console.error('Parse error:', err);
-								return;
-							}
-							emails.push({
-								from: parsed.from.text,
-								subject: parsed.subject,
-								date: parsed.date,
-								text: parsed.text,
-								html: parsed.html,
-								attachments: parsed.attachments
-							});
-						});
-					});
-				});
+	/**
+	 * Send password reset email
+	 */
+	async sendPasswordReset(to, userName, resetToken) {
+		const subject = 'Password Reset Request';
+		const resetLink = `https://yourplatform.com/reset-password?token=${resetToken}`;
 
-				f.once('error', (err) => {
-					console.error('✗ Fetch error:', err.message);
-					reject(err);
-				});
+		const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #EF4444; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { padding: 30px; background: #f9f9f9; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; background: #fff; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+          .button { display: inline-block; padding: 12px 24px; background: #EF4444; color: white; text-decoration: none; border-radius: 5px; }
+          .warning { color: #EF4444; font-size: 12px; margin-top: 20px; padding: 10px; background: #FEE2E2; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Password Reset</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${userName},</h2>
+            <p>We received a request to reset your password. Click the button below to create a new password:</p>
+            <p style="text-align: center;">
+              <a href="${resetLink}" class="button">Reset Password</a>
+            </p>
+            <div class="warning">
+              <strong>Important:</strong> This link will expire in 1 hour. If you didn't request this, please ignore this email.
+            </div>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${this.companyName}. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-				f.once('end', () => {
-					console.log(`✓ Successfully fetched ${emails.length} emails`);
-					imap.end();
-					resolve(emails);
-				});
-			});
-		});
+		const text = `Password Reset Request: Hello ${userName}, We received a request to reset your password. Use this link to reset: ${resetLink} This link expires in 1 hour.`;
 
-		imap.once('error', (err) => {
-			console.error('✗ IMAP connection error:', err.message);
-			reject(err);
-		});
+		return this.sendEmail(to, subject, text, html);
+	}
 
-		imap.connect();
-	});
-};
+	/**
+	 * Send notification email
+	 */
+	async sendNotificationEmail(to, title, message, actionUrl = null, actionText = null) {
+		const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #6B7280; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { padding: 30px; background: #f9f9f9; border-left: 1px solid #e0e0e0; border-right: 1px solid #e0e0e0; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; background: #fff; border-radius: 0 0 10px 10px; border: 1px solid #e0e0e0; border-top: none; }
+          .button { display: inline-block; padding: 12px 24px; background: #6B7280; color: white; text-decoration: none; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${title}</h1>
+          </div>
+          <div class="content">
+            ${message.split('\n').map(line => `<p>${line}</p>`).join('')}
+            ${actionUrl && actionText ? `
+              <p style="text-align: center;">
+                <a href="${actionUrl}" class="button">${actionText}</a>
+              </p>
+            ` : ''}
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${this.companyName}. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-// Export functions
-module.exports = {
-	sendEmail,
-	receiveEmails,
-	transporter: () => transporter // Export as function to get current transporter
-};
+		return this.sendEmail(to, title, message, html);
+	}
+
+	/**
+	 * Test email configuration
+	 */
+	async testEmailConnection() {
+		if (!this.isInitialized) {
+			return {
+				success: false,
+				message: 'SendGrid not initialized. Check SENDGRID_API_KEY.'
+			};
+		}
+
+		try {
+			// Send a test email to yourself
+			const result = await this.sendEmail(
+				this.fromEmail,
+				'SendGrid Test Email',
+				'This is a test email from SendGrid. If you receive this, your configuration is working correctly!',
+				'<p>This is a test email from <strong>SendGrid</strong>. If you receive this, your configuration is working correctly!</p>'
+			);
+
+			return {
+				success: result.success,
+				message: result.success ? 'Test email sent successfully' : result.error
+			};
+		} catch (error) {
+			return {
+				success: false,
+				message: error.message
+			};
+		}
+	}
+}
+
+// Create singleton instance
+const emailService = new EmailService();
+
+module.exports = emailService;
