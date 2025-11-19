@@ -8,37 +8,39 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
 const { generatePDF } = require("./utils/pdfGenerator");
-const { getInvoiceData } = require("./controllers/revenueController")
+const { getInvoiceData } = require("./controllers/revenueController");
 const sendEmail = require("./utils/emailService");
-const User = require('./models/User'); // Import User model (default export)
+const User = require('./models/User'); // Import User model
 
 const app = express();
 const port = process.env.PORT || 8080;
 
 const corsOptions = {
-	origin: '*', // Allow requests from your frontend
+	origin: process.env.FRONTEND_URL || '*', // Allow requests from your frontend
 	methods: 'GET,POST,PUT,DELETE', // Allowed HTTP methods
 	credentials: true, // Allow credentials (cookies, authorization headers)
 	allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
 };
 
-app.use(cors(corsOptions))
+app.use(cors(corsOptions));
 
-// Middleware
+// Security middleware
 app.use(helmet());
+
+// Body parser middleware with increased limits
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
-// Increase body parser limits to handle large file uploads
+
+// Express built-in parsers with increased limits
 app.use(express.json({
-	limit: '50mb',  // Increase from default 1mb to 50mb
+	limit: '50mb',
 	extended: true
 }));
 
 app.use(express.urlencoded({
-	limit: '50mb',  // Also increase for URL-encoded data
+	limit: '50mb',
 	extended: true
 }));
-
 
 // Function to create default superadmin user
 const createDefaultUser = async () => {
@@ -53,12 +55,12 @@ const createDefaultUser = async () => {
 
 		// Create the default user
 		const defaultUser = new User({
-			firstname: 'IT Business ',
+			firstname: 'IT Business',
 			lastname: 'Services',
 			middlename: '',
 			email: 'itbiz@globalsjxltd.com',
 			phoneNumber: '07990965269',
-			password: process.env.NEW_PASSWORD,
+			password: process.env.NEW_PASSWORD || 'defaultPassword123', // Make sure to set this in .env
 			department: 'IT Business Services',
 			position: 'BackOffice',
 			role: 'superadmin',
@@ -79,11 +81,12 @@ const createDefaultUser = async () => {
 			],
 			createdBy: 'System',
 			status: 'active',
-			firstLogin: false,
-			generatedPassword: false
+			firstLogin: true,
+			generatedPassword: true
 		});
 
 		await defaultUser.save();
+		console.log('Default superadmin user created successfully');
 
 	} catch (error) {
 		console.error('Error creating default user:', error);
@@ -92,6 +95,8 @@ const createDefaultUser = async () => {
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
+	useNewUrlParser: true,
+	useUnifiedTopology: true,
 }).then(async () => {
 	console.log('Connected to MongoDB');
 
@@ -100,6 +105,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 }).catch(err => {
 	console.error('Error connecting to MongoDB', err);
+	process.exit(1);
 });
 
 // Routes
@@ -116,10 +122,22 @@ app.use('/api/company', require('./routes/companyRoutes'));
 app.use('/api/accounts', require("./routes/accountRoutes"));
 app.use('/api/audit', require('./routes/auditLogRoutes'));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+	res.status(200).json({
+		status: 'OK',
+		timestamp: new Date().toISOString(),
+		uptime: process.uptime(),
+		database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+	});
+});
+
+// Test endpoint
 app.get('/test', (req, res) => {
 	res.send('Hello from the test endpoint!');
 });
 
+// Download invoice endpoint
 app.get('/download-invoice/:invoiceNo', async (req, res) => {
 	try {
 		const invoiceNo = req.params.invoiceNo;
@@ -140,15 +158,23 @@ app.get('/download-invoice/:invoiceNo', async (req, res) => {
 	}
 });
 
+// Cron job for sending invoice reminders
 cron.schedule('0 0 * * *', async () => { // This runs every day at midnight
 	try {
+		console.log('Running cron job for invoice reminders...');
+
 		const invoices = await Invoice.find({
 			transactionDate: { $lte: new Date(new Date() - 14 * 24 * 60 * 60 * 1000) }, // Invoices older than 14 days
 			status: { $ne: 'paid' } // Filter invoices that are not paid
-		});
+		}).populate('client'); // Populate client data
 
 		for (let invoice of invoices) {
 			const client = invoice.client; // Assuming invoice has a 'client' reference
+
+			if (!client || !client.email) {
+				console.log(`Skipping invoice ${invoice.invoiceNo} - no client or email found`);
+				continue;
+			}
 
 			// Send reminder email to the client
 			const subject = `Reminder: Invoice #${invoice.invoiceNo} is Overdue`;
@@ -158,6 +184,8 @@ cron.schedule('0 0 * * *', async () => { // This runs every day at midnight
 			await sendEmail(client.email, subject, text);
 			console.log(`Reminder email sent for Invoice #${invoice.invoiceNo} to ${client.email}`);
 		}
+
+		console.log(`Cron job completed. Processed ${invoices.length} invoices.`);
 	} catch (error) {
 		console.error('Error sending reminder emails:', error);
 	}
@@ -173,23 +201,29 @@ app.use(errorHandler);
 process.on('uncaughtException', (err) => {
 	console.error('Uncaught Exception:', err.message);
 	console.error(err.stack);
-	// Optionally, perform cleanup and exit
 	process.exit(1);
 });
 
 // Handle Unhandled Promise Rejections
 process.on('unhandledRejection', (reason, promise) => {
 	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-	// Optionally, perform cleanup and exit
 	process.exit(1);
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-	console.error(err.stack);
-	res.status(500).send(err);
+// Graceful shutdown
+process.on('SIGINT', async () => {
+	console.log('Received SIGINT. Shutting down gracefully...');
+	await mongoose.connection.close();
+	process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+	console.log('Received SIGTERM. Shutting down gracefully...');
+	await mongoose.connection.close();
+	process.exit(0);
 });
 
 app.listen(port, () => {
 	console.log(`Server running on port ${port}`);
+	console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });

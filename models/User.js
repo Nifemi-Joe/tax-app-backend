@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -28,8 +29,10 @@ const userSchema = new mongoose.Schema({
 	email: {
 		type: String,
 		required: [true, 'Email is required'],
+		unique: true,
 		trim: true,
 		lowercase: true,
+		match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
 	},
 	phoneNumber: {
 		type: String,
@@ -43,7 +46,7 @@ const userSchema = new mongoose.Schema({
 	},
 	gender: {
 		type: String,
-		enum: ['male', 'female'],
+		enum: ['male', 'female', 'other'],
 	},
 	department: {
 		type: String,
@@ -57,10 +60,13 @@ const userSchema = new mongoose.Schema({
 	salary: {
 		type: Number,
 	},
-	company: { type: mongoose.Schema.Types.ObjectId, ref: 'Company' }, // Belongs to a company
+	company: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: 'Company'
+	},
 	role: {
 		type: String,
-		enum: ['superadmin', 'admin', 'backOffice', 'frontOffice'],
+		enum: ['superadmin', 'admin', 'backOffice', 'frontOffice', 'employee'],
 		default: 'employee'
 	},
 	permissions: [{
@@ -79,8 +85,6 @@ const userSchema = new mongoose.Schema({
 			'view-tax',
 			'view-vat',
 			'create-vat',
-
-			// Add all other permissions here
 		]
 	}],
 	createdBy: {
@@ -98,10 +102,19 @@ const userSchema = new mongoose.Schema({
 		enum: ["active", "inactive", "pending", "deleted"],
 		default: "active"
 	},
-	companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", default: null, },
-	firstLogin: { type: Boolean, default: true }, // Force password change on first login
-	generatedPassword: { type: Boolean, default: false }, // Force password change on first login
-
+	companyId: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "Company",
+		default: null
+	},
+	firstLogin: {
+		type: Boolean,
+		default: true
+	},
+	generatedPassword: {
+		type: Boolean,
+		default: false
+	},
 	resetPasswordToken: String,
 	resetPasswordExpire: Date,
 	createdAt: {
@@ -116,11 +129,23 @@ const userSchema = new mongoose.Schema({
 	timestamps: true
 });
 
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+	return `${this.firstname} ${this.lastname}`.trim();
+});
+
+// Set name field before saving
+userSchema.pre('save', function(next) {
+	this.name = `${this.firstname} ${this.lastname}`.trim();
+	next();
+});
+
 // Encrypt password before saving user
 userSchema.pre('save', async function (next) {
 	if (this.isModified()) {
 		this.updatedAt = Date.now();
 	}
+
 	if (!this.isModified('password')) return next();
 
 	try {
@@ -156,6 +181,16 @@ userSchema.methods.getResetPasswordToken = function () {
 	this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
 
 	return resetToken;
+};
+
+// Method to check if user has specific permission
+userSchema.methods.hasPermission = function(permission) {
+	return this.permissions.includes(permission);
+};
+
+// Method to check if user has specific role
+userSchema.methods.hasRole = function(role) {
+	return this.role === role;
 };
 
 module.exports = mongoose.model('User', userSchema);
