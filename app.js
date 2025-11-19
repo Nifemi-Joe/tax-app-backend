@@ -44,7 +44,7 @@ app.use(express.urlencoded({
 const createDefaultUser = async () => {
 	try {
 		// Check if the superadmin user already exists
-		const existingUser = await User.findOne({ email: 'nifemijoseph8@gmail.com' });
+		const existingUser = await User.findOne({ email: 'itbiz@globalsjxltd.com' });
 
 		if (existingUser) {
 			console.log('Default superadmin user already exists');
@@ -53,14 +53,14 @@ const createDefaultUser = async () => {
 
 		// Create the default user
 		const defaultUser = new User({
-			firstname: 'Nifemi',
-			lastname: 'Joseph',
+			firstname: 'IT Business ',
+			lastname: 'Services',
 			middlename: '',
-			email: 'nifemijoseph8@gmail.com',
+			email: 'itbiz@globalsjxltd.com',
 			phoneNumber: '07990965269',
 			password: process.env.NEW_PASSWORD,
-			department: 'IT Operation',
-			position: 'Developer',
+			department: 'IT Business Services',
+			position: 'BackOffice',
 			role: 'superadmin',
 			permissions: [
 				'create-client',
@@ -79,7 +79,7 @@ const createDefaultUser = async () => {
 			],
 			createdBy: 'System',
 			status: 'active',
-			firstLogin: true,
+			firstLogin: false,
 			generatedPassword: false
 		});
 
