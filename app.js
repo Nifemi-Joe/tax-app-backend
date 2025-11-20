@@ -60,7 +60,7 @@ const createDefaultUser = async () => {
 			middlename: '',
 			email: 'itbiz@globalsjxltd.com',
 			phoneNumber: '07990965269',
-			password: process.env.NEW_PASSWORD || 'defaultPassword123', // Make sure to set this in .env
+			password: process.env.NEW_PASSWORD, // Make sure to set this in .env
 			department: 'IT Business Services',
 			position: 'BackOffice',
 			role: 'superadmin',
