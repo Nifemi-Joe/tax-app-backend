@@ -4,7 +4,6 @@ const asyncHandler = require('express-async-handler');
 const { check, validationResult } = require('express-validator');
 const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
-const { handleExpenseWHT } = require('./whtController');
 
 const getBase64FileSize = (base64String) => {
     if (!base64String) return 0;
@@ -18,6 +17,15 @@ const generateWHTId = async () => {
     const count = await WHT.countDocuments();
     const timestamp = Date.now().toString().slice(-6);
     return `WHT-${timestamp}-${(count + 1).toString().padStart(5, '0')}`;
+};
+
+// Helper function to calculate WHT values
+const calculateWHTValues = (transactionAmount, whtRate = 5, vatRate = 7.5) => {
+    const whtAmount = parseFloat(((whtRate / 100) * transactionAmount).toFixed(2));
+    const vatAmount = parseFloat(((vatRate / 100) * transactionAmount).toFixed(2));
+    const amountDue = parseFloat((transactionAmount - whtAmount + vatAmount).toFixed(2));
+
+    return { whtAmount, vatAmount, amountDue };
 };
 
 // @desc Create a new expense
@@ -65,11 +73,29 @@ exports.createExpense = asyncHandler(async (req, res) => {
             companyName,
             whtRate,
             vatRate,
+            whtAmount,
+            vatAmount,
+            amountDue,
             ...expenseFields
         } = req.body;
 
+        // Validate company name if WHT is enabled
+        if (enableWHT && (!companyName || companyName.trim() === '')) {
+            return res.status(400).json({
+                responseCode: "24",
+                responseMessage: "Company name is required when WHT is enabled"
+            });
+        }
+
         const expenseData = {
             ...expenseFields,
+            enableWHT: enableWHT || false,
+            companyName: enableWHT ? companyName : null,
+            whtRate: enableWHT ? (whtRate || 5) : null,
+            vatRate: enableWHT ? (vatRate || 7.5) : null,
+            whtAmount: enableWHT ? whtAmount : null,
+            vatAmount: enableWHT ? vatAmount : null,
+            amountDue: enableWHT ? amountDue : null,
             createdBy: req.user._id,
             companyId: req.user.companyId,
             status: "created"
@@ -78,7 +104,7 @@ exports.createExpense = asyncHandler(async (req, res) => {
         const expense = await Expense.create(expenseData);
 
         if (expense) {
-            // Handle WHT record creation
+            // Handle WHT record creation if enabled
             let whtRecord = null;
             if (enableWHT) {
                 const whtId = await generateWHTId();
@@ -104,17 +130,30 @@ exports.createExpense = asyncHandler(async (req, res) => {
                 user.name || `${user.firstname} ${user.lastname}`,
                 'created_expense',
                 "Expense Management",
-                `Created expense ${expense.description} by ${user.email}`,
+                `Created expense ${expense.description} by ${user.email}${enableWHT ? ` with WHT for ${companyName}` : ''}`,
                 req.body.ip || req.ip
             );
+
+            // Prepare response data with WHT info
+            const responseData = {
+                ...expense.toObject(),
+                whtData: enableWHT ? {
+                    enableWHT: true,
+                    companyName: expense.companyName,
+                    whtRate: expense.whtRate,
+                    vatRate: expense.vatRate,
+                    whtAmount: expense.whtAmount,
+                    vatAmount: expense.vatAmount,
+                    amountDue: expense.amountDue,
+                    whtRecordId: whtRecord?._id,
+                    whtId: whtRecord?.whtId
+                } : null
+            };
 
             res.status(201).json({
                 responseCode: "00",
                 responseMessage: "Expense added successfully!",
-                responseData: {
-                    expense,
-                    wht: whtRecord
-                }
+                responseData
             });
         } else {
             res.status(400).json({
@@ -149,11 +188,29 @@ exports.updateExpense = asyncHandler(async (req, res) => {
         companyName,
         whtRate,
         vatRate,
+        whtAmount,
+        vatAmount,
+        amountDue,
         ...updateFields
     } = req.body;
 
+    // Validate company name if WHT is enabled
+    if (enableWHT && (!companyName || companyName.trim() === '')) {
+        return res.status(400).json({
+            responseCode: "24",
+            responseMessage: "Company name is required when WHT is enabled"
+        });
+    }
+
     const updates = {
         ...updateFields,
+        enableWHT: enableWHT || false,
+        companyName: enableWHT ? companyName : null,
+        whtRate: enableWHT ? (whtRate || 5) : null,
+        vatRate: enableWHT ? (vatRate || 7.5) : null,
+        whtAmount: enableWHT ? whtAmount : null,
+        vatAmount: enableWHT ? vatAmount : null,
+        amountDue: enableWHT ? amountDue : null,
         updatedBy: req.user._id
     };
 
@@ -216,17 +273,30 @@ exports.updateExpense = asyncHandler(async (req, res) => {
         user.name || `${user.firstname} ${user.lastname}`,
         'updated_expense',
         "Expense Management",
-        `Updated expense ${expense.description} by ${user.email}`,
+        `Updated expense ${expense.description} by ${user.email}${enableWHT ? ` with WHT for ${companyName}` : ''}`,
         req.body.ip || req.ip
     );
+
+    // Prepare response data with WHT info
+    const responseData = {
+        ...updatedExpense.toObject(),
+        whtData: enableWHT ? {
+            enableWHT: true,
+            companyName: updatedExpense.companyName,
+            whtRate: updatedExpense.whtRate,
+            vatRate: updatedExpense.vatRate,
+            whtAmount: updatedExpense.whtAmount,
+            vatAmount: updatedExpense.vatAmount,
+            amountDue: updatedExpense.amountDue,
+            whtRecordId: whtRecord?._id,
+            whtId: whtRecord?.whtId
+        } : null
+    };
 
     res.status(200).json({
         responseCode: "00",
         responseMessage: "Expense updated successfully!",
-        responseData: {
-            expense: updatedExpense,
-            wht: whtRecord
-        }
+        responseData
     });
 });
 
@@ -252,10 +322,24 @@ exports.getAllExpenses = asyncHandler(async (req, res) => {
         });
 
         // Attach WHT data to expenses
-        const expensesWithWHT = expenses.map(expense => ({
-            ...expense,
-            whtData: whtMap[expense._id.toString()] || null
-        }));
+        const expensesWithWHT = expenses.map(expense => {
+            const whtRecord = whtMap[expense._id.toString()];
+            return {
+                ...expense,
+                whtData: expense.enableWHT ? {
+                    enableWHT: expense.enableWHT,
+                    companyName: expense.companyName,
+                    whtRate: expense.whtRate,
+                    vatRate: expense.vatRate,
+                    whtAmount: expense.whtAmount,
+                    vatAmount: expense.vatAmount,
+                    amountDue: expense.amountDue,
+                    whtRecordId: whtRecord?._id,
+                    whtId: whtRecord?.whtId,
+                    whtStatus: whtRecord?.status
+                } : null
+            };
+        });
 
         res.status(200).json({
             responseCode: "00",
@@ -293,7 +377,18 @@ exports.printExpense = asyncHandler(async (req, res) => {
         responseMessage: "Completed successfully",
         responseData: {
             ...expense.toObject(),
-            whtData
+            whtData: expense.enableWHT ? {
+                enableWHT: expense.enableWHT,
+                companyName: expense.companyName,
+                whtRate: expense.whtRate,
+                vatRate: expense.vatRate,
+                whtAmount: expense.whtAmount,
+                vatAmount: expense.vatAmount,
+                amountDue: expense.amountDue,
+                whtRecordId: whtData?._id,
+                whtId: whtData?.whtId,
+                whtStatus: whtData?.status
+            } : null
         }
     });
 });
@@ -302,7 +397,7 @@ exports.printExpense = asyncHandler(async (req, res) => {
 // @route POST /api/expenses/spool
 // @access Private
 exports.spoolExpenses = asyncHandler(async (req, res) => {
-    const { category, startDate, endDate } = req.body;
+    const { category, startDate, endDate, enableWHT } = req.body;
 
     let query = { status: { $ne: 'deleted' } };
 
@@ -316,10 +411,14 @@ exports.spoolExpenses = asyncHandler(async (req, res) => {
         if (endDate) query.date.$lte = new Date(endDate);
     }
 
+    if (enableWHT !== undefined) {
+        query.enableWHT = enableWHT;
+    }
+
     const expenses = await Expense.find(query).lean();
 
-    // Get WHT data for expenses
-    const expenseIds = expenses.map(e => e._id);
+    // Get WHT data for expenses with WHT enabled
+    const expenseIds = expenses.filter(e => e.enableWHT).map(e => e._id);
     const whtRecords = await WHT.find({
         sourceId: { $in: expenseIds },
         sourceType: 'expense',
@@ -331,15 +430,229 @@ exports.spoolExpenses = asyncHandler(async (req, res) => {
         whtMap[wht.sourceId.toString()] = wht;
     });
 
-    const expensesWithWHT = expenses.map(expense => ({
-        ...expense,
-        whtData: whtMap[expense._id.toString()] || null
-    }));
+    const expensesWithWHT = expenses.map(expense => {
+        const whtRecord = whtMap[expense._id.toString()];
+        return {
+            ...expense,
+            whtData: expense.enableWHT ? {
+                enableWHT: expense.enableWHT,
+                companyName: expense.companyName,
+                whtRate: expense.whtRate,
+                vatRate: expense.vatRate,
+                whtAmount: expense.whtAmount,
+                vatAmount: expense.vatAmount,
+                amountDue: expense.amountDue,
+                whtRecordId: whtRecord?._id,
+                whtId: whtRecord?.whtId
+            } : null
+        };
+    });
 
     res.status(200).json({
         responseCode: "00",
         responseMessage: "Completed successfully",
         responseData: expensesWithWHT
+    });
+});
+
+// @desc Get expenses with WHT only
+// @route GET /api/expenses/with-wht
+// @access Private
+exports.getExpensesWithWHT = asyncHandler(async (req, res) => {
+    const expenses = await Expense.find({
+        enableWHT: true,
+        status: { $ne: 'deleted' }
+    }).lean();
+
+    if (expenses && expenses.length > 0) {
+        const expenseIds = expenses.map(e => e._id);
+        const whtRecords = await WHT.find({
+            sourceId: { $in: expenseIds },
+            sourceType: 'expense',
+            status: { $ne: 'deleted' }
+        }).lean();
+
+        const whtMap = {};
+        whtRecords.forEach(wht => {
+            whtMap[wht.sourceId.toString()] = wht;
+        });
+
+        const expensesWithWHT = expenses.map(expense => {
+            const whtRecord = whtMap[expense._id.toString()];
+            return {
+                ...expense,
+                whtData: {
+                    enableWHT: expense.enableWHT,
+                    companyName: expense.companyName,
+                    whtRate: expense.whtRate,
+                    vatRate: expense.vatRate,
+                    whtAmount: expense.whtAmount,
+                    vatAmount: expense.vatAmount,
+                    amountDue: expense.amountDue,
+                    whtRecordId: whtRecord?._id,
+                    whtId: whtRecord?.whtId,
+                    whtStatus: whtRecord?.status
+                }
+            };
+        });
+
+        // Calculate totals
+        const totals = expensesWithWHT.reduce((acc, expense) => {
+            acc.totalAmount += expense.amount || 0;
+            acc.totalWHT += expense.whtAmount || 0;
+            acc.totalVAT += expense.vatAmount || 0;
+            acc.totalAmountDue += expense.amountDue || 0;
+            return acc;
+        }, {
+            totalAmount: 0,
+            totalWHT: 0,
+            totalVAT: 0,
+            totalAmountDue: 0
+        });
+
+        res.status(200).json({
+            responseCode: "00",
+            responseMessage: "Completed successfully",
+            responseData: {
+                expenses: expensesWithWHT,
+                totals: {
+                    totalAmount: parseFloat(totals.totalAmount.toFixed(2)),
+                    totalWHT: parseFloat(totals.totalWHT.toFixed(2)),
+                    totalVAT: parseFloat(totals.totalVAT.toFixed(2)),
+                    totalAmountDue: parseFloat(totals.totalAmountDue.toFixed(2)),
+                    count: expensesWithWHT.length
+                }
+            }
+        });
+    } else {
+        res.status(200).json({
+            responseCode: "22",
+            responseMessage: "No expenses with WHT found.",
+            responseData: {
+                expenses: [],
+                totals: {
+                    totalAmount: 0,
+                    totalWHT: 0,
+                    totalVAT: 0,
+                    totalAmountDue: 0,
+                    count: 0
+                }
+            }
+        });
+    }
+});
+
+// @desc Get WHT summary for expenses
+// @route GET /api/expenses/wht-summary
+// @access Private
+exports.getExpenseWHTSummary = asyncHandler(async (req, res) => {
+    const { year, month, quarter } = req.query;
+
+    let matchQuery = {
+        enableWHT: true,
+        status: { $ne: 'deleted' }
+    };
+
+    // Add date filters
+    if (year || month) {
+        matchQuery.date = {};
+        if (year) {
+            const startOfYear = new Date(year, 0, 1);
+            const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+            matchQuery.date.$gte = startOfYear;
+            matchQuery.date.$lte = endOfYear;
+        }
+        if (month) {
+            const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+            matchQuery.date.$gte = new Date(year || new Date().getFullYear(), monthIndex, 1);
+            matchQuery.date.$lte = new Date(year || new Date().getFullYear(), monthIndex + 1, 0, 23, 59, 59);
+        }
+    }
+
+    const summary = await Expense.aggregate([
+        { $match: matchQuery },
+        {
+            $group: {
+                _id: null,
+                totalTransactionAmount: { $sum: '$amount' },
+                totalWHTAmount: { $sum: '$whtAmount' },
+                totalVATAmount: { $sum: '$vatAmount' },
+                totalAmountDue: { $sum: '$amountDue' },
+                totalRecords: { $sum: 1 },
+                uniqueCompanies: { $addToSet: '$companyName' }
+            }
+        }
+    ]);
+
+    // Get breakdown by company
+    const companyBreakdown = await Expense.aggregate([
+        { $match: matchQuery },
+        {
+            $group: {
+                _id: '$companyName',
+                totalAmount: { $sum: '$amount' },
+                totalWHT: { $sum: '$whtAmount' },
+                totalVAT: { $sum: '$vatAmount' },
+                totalAmountDue: { $sum: '$amountDue' },
+                count: { $sum: 1 }
+            }
+        },
+        { $sort: { totalAmount: -1 } }
+    ]);
+
+    // Get monthly breakdown
+    const monthlyBreakdown = await Expense.aggregate([
+        { $match: matchQuery },
+        {
+            $group: {
+                _id: {
+                    year: { $year: '$date' },
+                    month: { $month: '$date' }
+                },
+                totalAmount: { $sum: '$amount' },
+                totalWHT: { $sum: '$whtAmount' },
+                totalVAT: { $sum: '$vatAmount' },
+                count: { $sum: 1 }
+            }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
+    const formattedMonthlyBreakdown = monthlyBreakdown.map(item => ({
+        year: item._id.year,
+        month: months[item._id.month - 1],
+        monthNumber: item._id.month,
+        totalAmount: parseFloat(item.totalAmount.toFixed(2)),
+        totalWHT: parseFloat(item.totalWHT.toFixed(2)),
+        totalVAT: parseFloat(item.totalVAT.toFixed(2)),
+        count: item.count
+    }));
+
+    res.status(200).json({
+        responseCode: "00",
+        responseMessage: "WHT Summary generated successfully",
+        responseData: {
+            overall: summary[0] || {
+                totalTransactionAmount: 0,
+                totalWHTAmount: 0,
+                totalVATAmount: 0,
+                totalAmountDue: 0,
+                totalRecords: 0,
+                uniqueCompanies: []
+            },
+            byCompany: companyBreakdown.map(item => ({
+                companyName: item._id || 'Unknown',
+                totalAmount: parseFloat(item.totalAmount.toFixed(2)),
+                totalWHT: parseFloat(item.totalWHT.toFixed(2)),
+                totalVAT: parseFloat(item.totalVAT.toFixed(2)),
+                totalAmountDue: parseFloat(item.totalAmountDue.toFixed(2)),
+                transactionCount: item.count
+            })),
+            monthlyBreakdown: formattedMonthlyBreakdown
+        }
     });
 });
 
@@ -366,6 +679,13 @@ exports.trackExpense = asyncHandler(async (req, res) => {
         date: expense.date,
         status: expense.status,
         paidOn: expense.paidOn,
+        enableWHT: expense.enableWHT,
+        companyName: expense.companyName,
+        whtRate: expense.whtRate,
+        vatRate: expense.vatRate,
+        whtAmount: expense.whtAmount,
+        vatAmount: expense.vatAmount,
+        amountDue: expense.amountDue,
         whtData
     });
 });
@@ -434,7 +754,7 @@ exports.softDeleteExpense = asyncHandler(async (req, res) => {
 // @access Private
 exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
     const {
-        reportType, // 'monthly', 'quarterly', 'yearly', 'custom'
+        reportType,
         year,
         month,
         quarter,
@@ -442,11 +762,13 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
         endDate
     } = req.body;
 
-    // Get WHT records for expenses
     let query = {
-        sourceType: 'expense',
+        enableWHT: true,
         status: { $ne: 'deleted' }
     };
+
+    // Add date filters based on report type
+    const currentYear = year || new Date().getFullYear();
 
     switch (reportType) {
         case 'monthly':
@@ -456,8 +778,11 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
                     responseMessage: "Year and month are required for monthly report"
                 });
             }
-            query.year = parseInt(year);
-            query.month = month;
+            const monthIndex = new Date(`${month} 1, 2000`).getMonth();
+            query.date = {
+                $gte: new Date(year, monthIndex, 1),
+                $lte: new Date(year, monthIndex + 1, 0, 23, 59, 59)
+            };
             break;
 
         case 'quarterly':
@@ -467,8 +792,17 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
                     responseMessage: "Year and quarter are required for quarterly report"
                 });
             }
-            query.year = parseInt(year);
-            query.quarter = quarter;
+            const quarterMonths = {
+                'Q1': [0, 2],
+                'Q2': [3, 5],
+                'Q3': [6, 8],
+                'Q4': [9, 11]
+            };
+            const [startMonth, endMonth] = quarterMonths[quarter];
+            query.date = {
+                $gte: new Date(year, startMonth, 1),
+                $lte: new Date(year, endMonth + 1, 0, 23, 59, 59)
+            };
             break;
 
         case 'yearly':
@@ -478,7 +812,10 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
                     responseMessage: "Year is required for yearly report"
                 });
             }
-            query.year = parseInt(year);
+            query.date = {
+                $gte: new Date(year, 0, 1),
+                $lte: new Date(year, 11, 31, 23, 59, 59)
+            };
             break;
 
         case 'custom':
@@ -488,27 +825,24 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
                     responseMessage: "Start date and end date are required for custom report"
                 });
             }
-            query.transDate = {
+            query.date = {
                 $gte: new Date(startDate),
                 $lte: new Date(endDate)
             };
             break;
 
         default:
-            // Return all
             break;
     }
 
-    const whtRecords = await WHT.find(query)
-        .populate('sourceId')
-        .sort({ transDate: 1 });
+    const expenses = await Expense.find(query).sort({ date: 1 }).lean();
 
     // Calculate totals
-    const totals = whtRecords.reduce((acc, record) => {
-        acc.totalTransAmount += record.totalTransactionAmount;
-        acc.totalWHT += record.whtAmount;
-        acc.totalVAT += record.vatAmount;
-        acc.totalAmountDue += record.amountDue;
+    const totals = expenses.reduce((acc, expense) => {
+        acc.totalTransAmount += expense.amount || 0;
+        acc.totalWHT += expense.whtAmount || 0;
+        acc.totalVAT += expense.vatAmount || 0;
+        acc.totalAmountDue += expense.amountDue || 0;
         return acc;
     }, {
         totalTransAmount: 0,
@@ -523,24 +857,30 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
     totals.totalVAT = parseFloat(totals.totalVAT.toFixed(2));
     totals.totalAmountDue = parseFloat(totals.totalAmountDue.toFixed(2));
 
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
     // Format records for tax returns template
-    const formattedRecords = whtRecords.map((record, index) => ({
-        sNo: index + 1,
-        month: record.month,
-        year: record.year,
-        transDate: new Date(record.transDate).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        }),
-        companyName: record.companyName,
-        transAmount: record.totalTransactionAmount,
-        whtRate: record.whtRate,
-        wht: record.whtAmount,
-        vatRate: record.vatRate,
-        vat: record.vatAmount,
-        amountDue: record.amountDue
-    }));
+    const formattedRecords = expenses.map((expense, index) => {
+        const expenseDate = new Date(expense.date);
+        return {
+            sNo: index + 1,
+            month: months[expenseDate.getMonth()],
+            year: expenseDate.getFullYear(),
+            transDate: expenseDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            }),
+            companyName: expense.companyName || expense.description || 'N/A',
+            transAmount: expense.amount,
+            whtRate: expense.whtRate,
+            wht: expense.whtAmount,
+            vatRate: expense.vatRate,
+            vat: expense.vatAmount,
+            amountDue: expense.amountDue
+        };
+    });
 
     // Format period string
     let period = '';
@@ -579,3 +919,5 @@ exports.getExpenseTaxReturns = asyncHandler(async (req, res) => {
         }
     });
 });
+
+module.exports = exports;
