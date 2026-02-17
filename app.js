@@ -122,6 +122,8 @@ app.use('/api/company', require('./routes/companyRoutes'));
 app.use('/api/accounts', require("./routes/accountRoutes"));
 app.use('/api/audit', require('./routes/auditLogRoutes'));
 app.use('/api/wht', require('./routes/whtRoutes'));
+app.use('/api/tax-returns', require('./routes/taxReturnRoutes'));
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -16,14 +16,15 @@ const getBase64FileSize = (base64String) => {
 const generateWHTId = async () => {
     const count = await WHT.countDocuments();
     const timestamp = Date.now().toString().slice(-6);
-    return `WHT-${timestamp}-${(count + 1).toString().padStart(5, '0')}`;
+    return `WHT-EXP-${timestamp}-${(count + 1).toString().padStart(5, '0')}`;
 };
 
 // Helper function to calculate WHT values
 const calculateWHTValues = (transactionAmount, whtRate = 5, vatRate = 7.5) => {
-    const whtAmount = parseFloat(((whtRate / 100) * transactionAmount).toFixed(2));
-    const vatAmount = parseFloat(((vatRate / 100) * transactionAmount).toFixed(2));
-    const amountDue = parseFloat((transactionAmount - whtAmount + vatAmount).toFixed(2));
+    const amount = parseFloat(transactionAmount) || 0;
+    const whtAmount = parseFloat(((whtRate / 100) * amount).toFixed(2));
+    const vatAmount = parseFloat(((vatRate / 100) * amount).toFixed(2));
+    const amountDue = parseFloat((amount - whtAmount + vatAmount).toFixed(2));
 
     return { whtAmount, vatAmount, amountDue };
 };
@@ -73,9 +74,9 @@ exports.createExpense = asyncHandler(async (req, res) => {
             companyName,
             whtRate,
             vatRate,
-            whtAmount,
-            vatAmount,
-            amountDue,
+            whtAmount: providedWhtAmount,
+            vatAmount: providedVatAmount,
+            amountDue: providedAmountDue,
             ...expenseFields
         } = req.body;
 
@@ -87,18 +88,27 @@ exports.createExpense = asyncHandler(async (req, res) => {
             });
         }
 
+        // Calculate WHT values if WHT is enabled
+        let calculatedValues = { whtAmount: null, vatAmount: null, amountDue: null };
+        if (enableWHT) {
+            const amount = parseFloat(expenseFields.amount) || 0;
+            const wRate = parseFloat(whtRate) || 5;
+            const vRate = parseFloat(vatRate) || 7.5;
+            calculatedValues = calculateWHTValues(amount, wRate, vRate);
+        }
+
         const expenseData = {
             ...expenseFields,
             enableWHT: enableWHT || false,
             companyName: enableWHT ? companyName : null,
-            whtRate: enableWHT ? (whtRate || 5) : null,
-            vatRate: enableWHT ? (vatRate || 7.5) : null,
-            whtAmount: enableWHT ? whtAmount : null,
-            vatAmount: enableWHT ? vatAmount : null,
-            amountDue: enableWHT ? amountDue : null,
+            whtRate: enableWHT ? (parseFloat(whtRate) || 5) : null,
+            vatRate: enableWHT ? (parseFloat(vatRate) || 7.5) : null,
+            whtAmount: enableWHT ? calculatedValues.whtAmount : null,
+            vatAmount: enableWHT ? calculatedValues.vatAmount : null,
+            amountDue: enableWHT ? calculatedValues.amountDue : null,
             createdBy: req.user._id,
             companyId: req.user.companyId,
-            status: "created"
+            status: expenseFields.status || "created"
         };
 
         const expense = await Expense.create(expenseData);
@@ -107,21 +117,39 @@ exports.createExpense = asyncHandler(async (req, res) => {
             // Handle WHT record creation if enabled
             let whtRecord = null;
             if (enableWHT) {
-                const whtId = await generateWHTId();
-                whtRecord = await WHT.create({
-                    whtId,
-                    transDate: expense.date,
-                    companyName: companyName || expense.description || 'N/A',
-                    totalTransactionAmount: expense.amount,
-                    whtRate: whtRate || 5,
-                    vatRate: vatRate || 7.5,
-                    sourceType: 'expense',
-                    sourceId: expense._id,
-                    sourceModel: 'Expense',
-                    description: expense.description,
-                    companyId: req.user.companyId,
-                    createdBy: req.user._id
-                });
+                try {
+                    const whtId = await generateWHTId();
+                    const wRate = parseFloat(whtRate) || 5;
+                    const vRate = parseFloat(vatRate) || 7.5;
+                    const amount = parseFloat(expense.amount) || 0;
+
+                    // Calculate values for WHT record
+                    const whtValues = calculateWHTValues(amount, wRate, vRate);
+
+                    whtRecord = await WHT.create({
+                        whtId,
+                        transDate: expense.date,
+                        companyName: companyName || expense.description || 'N/A',
+                        totalTransactionAmount: amount,
+                        whtRate: wRate,
+                        vatRate: vRate,
+                        whtAmount: whtValues.whtAmount,
+                        vatAmount: whtValues.vatAmount,
+                        amountDue: whtValues.amountDue,
+                        sourceType: 'expense',
+                        sourceId: expense._id,
+                        sourceModel: 'Expense',
+                        description: expense.description,
+                        companyId: req.user.companyId,
+                        createdBy: req.user._id,
+                        status: 'unpaid'
+                    });
+
+                    console.log('WHT Record created:', whtRecord);
+                } catch (whtError) {
+                    console.error('Error creating WHT record:', whtError);
+                    // Don't fail the expense creation, just log the error
+                }
             }
 
             const user = await User.findById(req.user._id);
@@ -165,7 +193,7 @@ exports.createExpense = asyncHandler(async (req, res) => {
         console.error('Create expense error:', error);
         res.status(500).json({
             responseCode: "99",
-            responseMessage: "Failed to create expense. Please try again."
+            responseMessage: error.message || "Failed to create expense. Please try again."
         });
     }
 });
@@ -188,9 +216,9 @@ exports.updateExpense = asyncHandler(async (req, res) => {
         companyName,
         whtRate,
         vatRate,
-        whtAmount,
-        vatAmount,
-        amountDue,
+        whtAmount: providedWhtAmount,
+        vatAmount: providedVatAmount,
+        amountDue: providedAmountDue,
         ...updateFields
     } = req.body;
 
@@ -202,15 +230,24 @@ exports.updateExpense = asyncHandler(async (req, res) => {
         });
     }
 
+    // Calculate WHT values if WHT is enabled
+    let calculatedValues = { whtAmount: null, vatAmount: null, amountDue: null };
+    if (enableWHT) {
+        const amount = parseFloat(updateFields.amount || expense.amount) || 0;
+        const wRate = parseFloat(whtRate) || 5;
+        const vRate = parseFloat(vatRate) || 7.5;
+        calculatedValues = calculateWHTValues(amount, wRate, vRate);
+    }
+
     const updates = {
         ...updateFields,
         enableWHT: enableWHT || false,
         companyName: enableWHT ? companyName : null,
-        whtRate: enableWHT ? (whtRate || 5) : null,
-        vatRate: enableWHT ? (vatRate || 7.5) : null,
-        whtAmount: enableWHT ? whtAmount : null,
-        vatAmount: enableWHT ? vatAmount : null,
-        amountDue: enableWHT ? amountDue : null,
+        whtRate: enableWHT ? (parseFloat(whtRate) || 5) : null,
+        vatRate: enableWHT ? (parseFloat(vatRate) || 7.5) : null,
+        whtAmount: enableWHT ? calculatedValues.whtAmount : null,
+        vatAmount: enableWHT ? calculatedValues.vatAmount : null,
+        amountDue: enableWHT ? calculatedValues.amountDue : null,
         updatedBy: req.user._id
     };
 
@@ -222,49 +259,65 @@ exports.updateExpense = asyncHandler(async (req, res) => {
     // Handle WHT record update
     let whtRecord = null;
 
-    // Find existing WHT record
-    const existingWHT = await WHT.findOne({
-        sourceId: expense._id,
-        sourceType: 'expense',
-        status: { $ne: 'deleted' }
-    });
+    try {
+        // Find existing WHT record
+        const existingWHT = await WHT.findOne({
+            sourceId: expense._id,
+            sourceType: 'expense',
+            status: { $ne: 'deleted' }
+        });
 
-    if (enableWHT) {
-        if (existingWHT) {
-            // Update existing WHT record
-            whtRecord = await WHT.findByIdAndUpdate(existingWHT._id, {
-                transDate: updatedExpense.date,
-                companyName: companyName || updatedExpense.description || 'N/A',
-                totalTransactionAmount: updatedExpense.amount,
-                whtRate: whtRate || existingWHT.whtRate,
-                vatRate: vatRate || existingWHT.vatRate,
-                description: updatedExpense.description,
+        if (enableWHT) {
+            const wRate = parseFloat(whtRate) || 5;
+            const vRate = parseFloat(vatRate) || 7.5;
+            const amount = parseFloat(updatedExpense.amount) || 0;
+            const whtValues = calculateWHTValues(amount, wRate, vRate);
+
+            if (existingWHT) {
+                // Update existing WHT record
+                whtRecord = await WHT.findByIdAndUpdate(existingWHT._id, {
+                    transDate: updatedExpense.date,
+                    companyName: companyName || updatedExpense.description || 'N/A',
+                    totalTransactionAmount: amount,
+                    whtRate: wRate,
+                    vatRate: vRate,
+                    whtAmount: whtValues.whtAmount,
+                    vatAmount: whtValues.vatAmount,
+                    amountDue: whtValues.amountDue,
+                    description: updatedExpense.description,
+                    updatedBy: req.user._id
+                }, { new: true, runValidators: true });
+            } else {
+                // Create new WHT record
+                const whtId = await generateWHTId();
+                whtRecord = await WHT.create({
+                    whtId,
+                    transDate: updatedExpense.date,
+                    companyName: companyName || updatedExpense.description || 'N/A',
+                    totalTransactionAmount: amount,
+                    whtRate: wRate,
+                    vatRate: vRate,
+                    whtAmount: whtValues.whtAmount,
+                    vatAmount: whtValues.vatAmount,
+                    amountDue: whtValues.amountDue,
+                    sourceType: 'expense',
+                    sourceId: updatedExpense._id,
+                    sourceModel: 'Expense',
+                    description: updatedExpense.description,
+                    companyId: req.user.companyId,
+                    createdBy: req.user._id,
+                    status: 'unpaid'
+                });
+            }
+        } else if (existingWHT && enableWHT === false) {
+            // Soft delete WHT record if WHT is disabled
+            await WHT.findByIdAndUpdate(existingWHT._id, {
+                status: 'deleted',
                 updatedBy: req.user._id
-            }, { new: true, runValidators: true });
-        } else {
-            // Create new WHT record
-            const whtId = await generateWHTId();
-            whtRecord = await WHT.create({
-                whtId,
-                transDate: updatedExpense.date,
-                companyName: companyName || updatedExpense.description || 'N/A',
-                totalTransactionAmount: updatedExpense.amount,
-                whtRate: whtRate || 5,
-                vatRate: vatRate || 7.5,
-                sourceType: 'expense',
-                sourceId: updatedExpense._id,
-                sourceModel: 'Expense',
-                description: updatedExpense.description,
-                companyId: req.user.companyId,
-                createdBy: req.user._id
             });
         }
-    } else if (existingWHT && enableWHT === false) {
-        // Soft delete WHT record if WHT is disabled
-        await WHT.findByIdAndUpdate(existingWHT._id, {
-            status: 'deleted',
-            updatedBy: req.user._id
-        });
+    } catch (whtError) {
+        console.error('Error updating WHT record:', whtError);
     }
 
     const user = await User.findById(req.user._id);
@@ -304,7 +357,7 @@ exports.updateExpense = asyncHandler(async (req, res) => {
 // @route GET /api/expenses/read
 // @access Private
 exports.getAllExpenses = asyncHandler(async (req, res) => {
-    const expenses = await Expense.find().lean();
+    const expenses = await Expense.find({ status: { $ne: 'deleted' } }).lean();
 
     if (expenses && expenses.length > 0) {
         // Fetch WHT data for each expense
@@ -356,13 +409,16 @@ exports.getAllExpenses = asyncHandler(async (req, res) => {
 });
 
 // @desc Print an expense
-// @route GET /api/expenses/:id/print
+// @route GET /api/expenses/read-by-id/:id
 // @access Private
 exports.printExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.findById(req.params.id);
 
     if (!expense) {
-        return res.status(404).json({ message: 'Expense not found' });
+        return res.status(404).json({
+            responseCode: "24",
+            responseMessage: 'Expense not found'
+        });
     }
 
     // Get associated WHT data
@@ -657,13 +713,16 @@ exports.getExpenseWHTSummary = asyncHandler(async (req, res) => {
 });
 
 // @desc Track expense payments
-// @route GET /api/expenses/:id/track
+// @route GET /api/expenses/track/:id
 // @access Private
 exports.trackExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.findById(req.params.id);
 
     if (!expense) {
-        return res.status(404).json({ message: 'Expense not found' });
+        return res.status(404).json({
+            responseCode: "24",
+            responseMessage: 'Expense not found'
+        });
     }
 
     const whtData = await WHT.findOne({
@@ -673,43 +732,64 @@ exports.trackExpense = asyncHandler(async (req, res) => {
     });
 
     res.status(200).json({
-        description: expense.description,
-        amount: expense.amount,
-        category: expense.category,
-        date: expense.date,
-        status: expense.status,
-        paidOn: expense.paidOn,
-        enableWHT: expense.enableWHT,
-        companyName: expense.companyName,
-        whtRate: expense.whtRate,
-        vatRate: expense.vatRate,
-        whtAmount: expense.whtAmount,
-        vatAmount: expense.vatAmount,
-        amountDue: expense.amountDue,
-        whtData
+        responseCode: "00",
+        responseMessage: "Completed successfully",
+        responseData: {
+            description: expense.description,
+            amount: expense.amount,
+            category: expense.category,
+            date: expense.date,
+            status: expense.status,
+            paidOn: expense.paidOn,
+            enableWHT: expense.enableWHT,
+            companyName: expense.companyName,
+            whtRate: expense.whtRate,
+            vatRate: expense.vatRate,
+            whtAmount: expense.whtAmount,
+            vatAmount: expense.vatAmount,
+            amountDue: expense.amountDue,
+            whtData
+        }
     });
 });
 
 // @desc Disburse or claim an expense
-// @route PUT /api/expenses/:id/disburse
+// @route PUT /api/expenses/disburse/:id
 // @access Private
 exports.disburseExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.findById(req.params.id);
 
     if (!expense) {
-        return res.status(404).json({ message: 'Expense not found' });
+        return res.status(404).json({
+            responseCode: "24",
+            responseMessage: 'Expense not found'
+        });
     }
 
-    if (expense.status !== 'Pending') {
-        return res.status(400).json({ message: 'Expense is already disbursed or claimed' });
+    if (expense.status !== 'created') {
+        return res.status(400).json({
+            responseCode: "24",
+            responseMessage: 'Expense is already disbursed or processed'
+        });
     }
 
-    expense.status = 'Disbursed';
+    expense.status = 'approved';
     expense.paidOn = new Date();
+    expense.updatedBy = req.user._id;
 
     await expense.save();
 
-    res.status(200).json({ message: 'Expense disbursed successfully', expense });
+    // Update WHT record status if exists
+    await WHT.findOneAndUpdate(
+        { sourceId: expense._id, sourceType: 'expense', status: { $ne: 'deleted' } },
+        { status: 'paid', updatedBy: req.user._id }
+    );
+
+    res.status(200).json({
+        responseCode: "00",
+        responseMessage: 'Expense disbursed successfully',
+        responseData: expense
+    });
 });
 
 // @desc Soft delete expense
@@ -719,7 +799,10 @@ exports.softDeleteExpense = asyncHandler(async (req, res) => {
     const expense = await Expense.findById(req.params.id);
 
     if (!expense) {
-        return res.status(404).json({ message: 'Expense not found' });
+        return res.status(404).json({
+            responseCode: "24",
+            responseMessage: 'Expense not found'
+        });
     }
 
     expense.status = 'deleted';

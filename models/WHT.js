@@ -46,7 +46,7 @@ const WHTSchema = new mongoose.Schema({
         required: true,
         set: (value) => parseFloat(value.toFixed(2))
     },
-    // WHT calculations
+    // WHT calculations - REMOVED required: true since these are calculated
     whtRate: {
         type: Number,
         required: true,
@@ -54,24 +54,24 @@ const WHTSchema = new mongoose.Schema({
     },
     whtAmount: {
         type: Number,
-        required: true,
-        set: (value) => parseFloat(value.toFixed(2))
+        default: 0,
+        set: (value) => value ? parseFloat(value.toFixed(2)) : 0
     },
-    // VAT calculations
+    // VAT calculations - REMOVED required: true since these are calculated
     vatRate: {
         type: Number,
         default: 7.5
     },
     vatAmount: {
         type: Number,
-        required: true,
-        set: (value) => parseFloat(value.toFixed(2))
+        default: 0,
+        set: (value) => value ? parseFloat(value.toFixed(2)) : 0
     },
-    // Amount Due = Transaction Amount - WHT + VAT
+    // Amount Due = Transaction Amount - WHT + VAT - REMOVED required: true
     amountDue: {
         type: Number,
-        required: true,
-        set: (value) => parseFloat(value.toFixed(2))
+        default: 0,
+        set: (value) => value ? parseFloat(value.toFixed(2)) : 0
     },
     // Period information for reporting
     month: {
@@ -122,30 +122,40 @@ const WHTSchema = new mongoose.Schema({
 
 // Pre-save middleware to calculate values and set period info
 WHTSchema.pre('save', function(next) {
-    // Calculate WHT Amount
-    this.whtAmount = parseFloat(((this.whtRate / 100) * this.totalTransactionAmount).toFixed(2));
+    // Always calculate WHT Amount
+    if (this.totalTransactionAmount && this.whtRate !== undefined) {
+        this.whtAmount = parseFloat(((this.whtRate / 100) * this.totalTransactionAmount).toFixed(2));
+    }
 
-    // Calculate VAT Amount
-    this.vatAmount = parseFloat(((this.vatRate / 100) * this.totalTransactionAmount).toFixed(2));
+    // Always calculate VAT Amount
+    if (this.totalTransactionAmount && this.vatRate !== undefined) {
+        this.vatAmount = parseFloat(((this.vatRate / 100) * this.totalTransactionAmount).toFixed(2));
+    }
 
-    // Calculate Amount Due (Transaction Amount - WHT + VAT)
-    this.amountDue = parseFloat((this.totalTransactionAmount - this.whtAmount + this.vatAmount).toFixed(2));
+    // Always calculate Amount Due (Transaction Amount - WHT + VAT)
+    if (this.totalTransactionAmount !== undefined) {
+        const wht = this.whtAmount || 0;
+        const vat = this.vatAmount || 0;
+        this.amountDue = parseFloat((this.totalTransactionAmount - wht + vat).toFixed(2));
+    }
 
     // Set month, year, and quarter from transDate
-    const date = new Date(this.transDate);
-    const months = ['January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'];
+    if (this.transDate) {
+        const date = new Date(this.transDate);
+        const months = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
 
-    this.month = months[date.getMonth()];
-    this.monthNumber = date.getMonth() + 1;
-    this.year = date.getFullYear();
+        this.month = months[date.getMonth()];
+        this.monthNumber = date.getMonth() + 1;
+        this.year = date.getFullYear();
 
-    // Set quarter
-    const monthNum = date.getMonth();
-    if (monthNum >= 0 && monthNum <= 2) this.quarter = 'Q1';
-    else if (monthNum >= 3 && monthNum <= 5) this.quarter = 'Q2';
-    else if (monthNum >= 6 && monthNum <= 8) this.quarter = 'Q3';
-    else this.quarter = 'Q4';
+        // Set quarter
+        const monthNum = date.getMonth();
+        if (monthNum >= 0 && monthNum <= 2) this.quarter = 'Q1';
+        else if (monthNum >= 3 && monthNum <= 5) this.quarter = 'Q2';
+        else if (monthNum >= 6 && monthNum <= 8) this.quarter = 'Q3';
+        else this.quarter = 'Q4';
+    }
 
     // Set updatedAt
     this.updatedAt = new Date();
@@ -162,9 +172,11 @@ WHTSchema.pre('findOneAndUpdate', function(next) {
         const whtRate = update.whtRate !== undefined ? update.whtRate : 5;
         const vatRate = update.vatRate !== undefined ? update.vatRate : 7.5;
 
-        update.whtAmount = parseFloat(((whtRate / 100) * transAmount).toFixed(2));
-        update.vatAmount = parseFloat(((vatRate / 100) * transAmount).toFixed(2));
-        update.amountDue = parseFloat((transAmount - update.whtAmount + update.vatAmount).toFixed(2));
+        if (transAmount) {
+            update.whtAmount = parseFloat(((whtRate / 100) * transAmount).toFixed(2));
+            update.vatAmount = parseFloat(((vatRate / 100) * transAmount).toFixed(2));
+            update.amountDue = parseFloat((transAmount - update.whtAmount + update.vatAmount).toFixed(2));
+        }
     }
 
     if (update.transDate) {

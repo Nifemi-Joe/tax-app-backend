@@ -92,25 +92,28 @@ const expenseSchema = new mongoose.Schema(
             type: Number,
             min: [0, 'WHT rate must be a positive number'],
             max: [100, 'WHT rate cannot exceed 100'],
-            default: 5,
+            default: null,
         },
         vatRate: {
             type: Number,
             min: [0, 'VAT rate must be a positive number'],
             max: [100, 'VAT rate cannot exceed 100'],
-            default: 7.5,
+            default: null,
         },
         whtAmount: {
             type: Number,
             min: [0, 'WHT amount must be a positive number'],
+            default: null,
         },
         vatAmount: {
             type: Number,
             min: [0, 'VAT amount must be a positive number'],
+            default: null,
         },
         amountDue: {
             type: Number,
             min: [0, 'Amount due must be a positive number'],
+            default: null,
         },
         createdBy: {
             type: String,
@@ -142,12 +145,14 @@ expenseSchema.pre('save', function (next) {
         this.whtAmount = Number(((whtRate / 100) * this.amount).toFixed(2));
         this.vatAmount = Number(((vatRate / 100) * this.amount).toFixed(2));
         this.amountDue = Number((this.amount - this.whtAmount + this.vatAmount).toFixed(2));
-    } else {
+    } else if (!this.enableWHT) {
         // Clear WHT values if WHT is disabled
         this.whtAmount = null;
         this.vatAmount = null;
         this.amountDue = null;
         this.companyName = null;
+        this.whtRate = null;
+        this.vatRate = null;
     }
 
     next();
@@ -158,7 +163,7 @@ expenseSchema.pre('findOneAndUpdate', function (next) {
     const update = this.getUpdate();
 
     if (update.amount !== undefined) {
-        update.amount = Number(update.amount.toFixed(2));
+        update.amount = Number(parseFloat(update.amount).toFixed(2));
     }
 
     // Calculate WHT values if WHT is enabled
@@ -175,6 +180,8 @@ expenseSchema.pre('findOneAndUpdate', function (next) {
         update.vatAmount = null;
         update.amountDue = null;
         update.companyName = null;
+        update.whtRate = null;
+        update.vatRate = null;
     }
 
     update.updatedAt = new Date();
