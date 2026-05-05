@@ -15,17 +15,43 @@ const User = require("../models/User");
 const logAction = require("../utils/auditLogger");
 const emailService = require('../utils/emailService');
 const Account = require("../models/Account");
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPER: Detect if this invoice belongs to FCMB
+//  Matches any variation of "First City Monument Bank" or "FCMB" (case-insensitive)
+// ─────────────────────────────────────────────────────────────────────────────
+const isFCMBClient = (bankName = "") => {
+    const normalised = bankName.trim().toLowerCase();
+    return (
+        normalised === "fcmb" ||
+        normalised.includes("fcmb") ||
+        normalised.includes("first city monument bank") ||
+        normalised.includes("first city monument")
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPER: Choose the correct EJS template for a given invoice + account
+// ─────────────────────────────────────────────────────────────────────────────
+const resolveTemplate = (invoiceType, bankName = "") => {
+    if (isFCMBClient(bankName)) {
+        return "fcmb_invoice.ejs";
+    }
+    // Default template for all other clients / invoice types
+    return "acs_rba_invoice.ejs";
+};
+
 const formatCurrency = (amount, currency) => {
-	return new Intl.NumberFormat('en-US', {
-		style: 'currency',
-		currency: currency,
-		minimumFractionDigits: 3,
-		maximumFractionDigits: 3
-	}).format(amount);
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3
+    }).format(amount);
 };
 
 const generateEmailContent = (role, invoiceData, client) => {
-	let emailContent = `
+    let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
       <head>
@@ -88,16 +114,17 @@ const generateEmailContent = (role, invoiceData, client) => {
     </html>
   `;
 
-	// Modify content for client-specific emails
-	if (role === 'client') {
-		emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
-		emailContent = emailContent.replace('<span>Update Invoice</span>', '')
-	}
+    // Modify content for client-specific emails
+    if (role === 'client') {
+        emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
+        emailContent = emailContent.replace('<span>Update Invoice</span>', '')
+    }
 
-	return emailContent;
+    return emailContent;
 };
+
 const generateUpdateEmailContent = (role, invoiceData, client) => {
-	let emailContent = `
+    let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
       <head>
@@ -158,17 +185,17 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
     </html>
   `;
 
-	// Modify content for client-specific emails
-	if (role === 'client') {
-		emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
-		emailContent = emailContent.replace('<span>Update Invoice</span>', '')
-	}
+    // Modify content for client-specific emails
+    if (role === 'client') {
+        emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
+        emailContent = emailContent.replace('<span>Update Invoice</span>', '')
+    }
 
-	return emailContent;
+    return emailContent;
 };
 
 const generateCompleteEmailContent = (role, invoiceData, client) => {
-	let emailContent = `
+    let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
       <head>
@@ -214,11 +241,11 @@ const generateCompleteEmailContent = (role, invoiceData, client) => {
       </body>
     </html>
   `;
-	return emailContent;
+    return emailContent;
 };
 
 const generateEmailRejectedContent = (role, invoiceData, client) => {
-	let emailContent = `
+    let emailContent = `
     <!DOCTYPE html>
     <html lang="en">
       <head>
@@ -273,430 +300,437 @@ const generateEmailRejectedContent = (role, invoiceData, client) => {
     </html>
   `;
 
-	// Modify content for client-specific emails
-	if (role === 'client') {
-		emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
-		emailContent = emailContent.replace('<span>Update Invoice</span>', '')
-	}
+    // Modify content for client-specific emails
+    if (role === 'client') {
+        emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
+        emailContent = emailContent.replace('<span>Update Invoice</span>', '')
+    }
 
-	return emailContent;
+    return emailContent;
 };
 
 
 // Utility function to generate a random number with a specific prefix
 const generateRandomNumberWithPrefix = (prefix) => {
-	return `${prefix}${Math.floor(10000 + Math.random() * 90000)}`;
+    return `${prefix}${Math.floor(10000 + Math.random() * 90000)}`;
 };
+
 const recalculateClientTotals = async (clientId) => {
-	try {
-		// Validate the clientId
-		if (!mongoose.Types.ObjectId.isValid(clientId)) {
-			throw new Error('Invalid client ID');
-		}
+    try {
+        // Validate the clientId
+        if (!mongoose.Types.ObjectId.isValid(clientId)) {
+            throw new Error('Invalid client ID');
+        }
 
-		const objectId = new mongoose.Types.ObjectId(clientId);
+        const objectId = new mongoose.Types.ObjectId(clientId);
 
-		// Fetch all active (non-deleted) invoices for the client
-		const invoices = await Revenue.find({ clientId: objectId, status: { $ne: 'deleted' } });
+        // Fetch all active (non-deleted) invoices for the client
+        const invoices = await Revenue.find({ clientId: objectId, status: { $ne: 'deleted' } });
 
-		// Calculate totals
-		let totalPaid = 0;
-		let totalDue = 0;
-		let totalAmount = 0;
+        // Calculate totals
+        let totalPaid = 0;
+        let totalDue = 0;
+        let totalAmount = 0;
 
-		invoices.forEach(invoice => {
-			totalPaid += invoice.amountPaid;
-			totalDue += invoice.amountDue;
-			totalAmount += invoice.totalInvoiceFeePlusVat_ngn;
-		});
+        invoices.forEach(invoice => {
+            totalPaid += invoice.amountPaid;
+            totalDue += invoice.amountDue;
+            totalAmount += invoice.totalInvoiceFeePlusVat_ngn;
+        });
 
-		// Update client totals
-		await Client.findByIdAndUpdate(clientId, {
-			clientAmountPaid: totalPaid,
-			clientAmountDue: totalAmount - totalPaid,
-			clientTotalInvoice: totalAmount,
-			updatedAt: Date.now(),
-		});
+        // Update client totals
+        await Client.findByIdAndUpdate(clientId, {
+            clientAmountPaid: totalPaid,
+            clientAmountDue: totalAmount - totalPaid,
+            clientTotalInvoice: totalAmount,
+            updatedAt: Date.now(),
+        });
 
-		console.log(`Recalculated totals for client ID: ${clientId}`);
-	} catch (error) {
-		console.error(`Error in recalculateClientTotals: ${error.message}`);
-		throw error; // Rethrow to be handled by the caller
-	}
+        console.log(`Recalculated totals for client ID: ${clientId}`);
+    } catch (error) {
+        console.error(`Error in recalculateClientTotals: ${error.message}`);
+        throw error;
+    }
 };
 
 function determineTaxRate(invoice) {
-	// Logic to determine the applicable tax rate
-	// This might be based on the type of service/product in the invoice
-	return 7.5; // Example VAT rate
+    return 7.5; // Example VAT rate
 }
 
 // @desc    Create a new invoice
 // @route   POST /api/revenue/createInvoice
 // @access  Private
 exports.createInvoice = asyncHandler(async (req, res) => {
-	// Validate incoming request
-	await check('userId', 'User ID is required').notEmpty().run(req);
-	await check('clientId', 'Client ID is required').notEmpty().run(req);
-	await check('period', 'Transaction Period is required').notEmpty().run(req);
-	await check('amountDue', 'Amount Due is required and must be a valid number').isFloat().run(req);
-	await check('transactionDate', 'Transaction Date is required').notEmpty().run(req);
-	const user = await User.findById(req.user._id); // Assuming you have a User model
+    // Validate incoming request
+    await check('userId', 'User ID is required').notEmpty().run(req);
+    await check('clientId', 'Client ID is required').notEmpty().run(req);
+    await check('period', 'Transaction Period is required').notEmpty().run(req);
+    await check('amountDue', 'Amount Due is required and must be a valid number').isFloat().run(req);
+    await check('transactionDate', 'Transaction Date is required').notEmpty().run(req);
+    const user = await User.findById(req.user._id);
 
-	// Extract relevant fields from req.body
-	const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate } = req.body;
+    // Extract relevant fields from req.body
+    const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate } = req.body;
 
-	// Check required fields based on invoice type
-	if ((invoiceType === 'ACS_RBA' || invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL") && (!service1 || !service2)) {
-		return res.status(400).json({ responseMessage: 'Service1 and Service2 are required for ACS_RBA invoices', responseCode: "22" });
-	} else if ((invoiceType === 'OUTSOURCING' || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") && !roles) {
-		return res.status(400).json({ responseMessage: 'Roles are required for OUTSOURCING invoices', responseCode: "22" });
-	} else if (invoiceType === 'OTHER_INVOICES' && !otherInvoiceServices) {
-		return res.status(400).json({ responseMessage: 'Service details are required for OTHER_INVOICES', responseCode: "22" });
-	}
+    // Check required fields based on invoice type
+    if ((invoiceType === 'ACS_RBA' || invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL") && (!service1 || !service2)) {
+        return res.status(400).json({ responseMessage: 'Service1 and Service2 are required for ACS_RBA invoices', responseCode: "22" });
+    } else if ((invoiceType === 'OUTSOURCING' || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") && !roles) {
+        return res.status(400).json({ responseMessage: 'Roles are required for OUTSOURCING invoices', responseCode: "22" });
+    } else if (invoiceType === 'OTHER_INVOICES' && !otherInvoiceServices) {
+        return res.status(400).json({ responseMessage: 'Service details are required for OTHER_INVOICES', responseCode: "22" });
+    }
 
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
-		return res.status(400).json({ errors: errors.array() });
-	}
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
-	let invoiceData = req.body;
+    let invoiceData = req.body;
 
-	// Validate client existence
-	const existingClient = await Client.findById(clientId);
-	if (!existingClient) {
-		return res.status(404).json({
-			responseCode: "24",
-			responseMessage: "Client not found"
-		});
-	}
-	if (existingClient.status !== "active"){
-		return res.status(404).json({
-			responseCode: "22",
-			responseMessage: "Client awaiting approval."
-		});
-	}
-	if (!existingClient.account){
-		return res.status(404).json({
-			responseCode: "24",
-			responseMessage: "Client does not have a linked account"
-		});
-	}
-	const existingAccount = await Account.findOne({ _id: existingClient.account });
+    // Validate client existence
+    const existingClient = await Client.findById(clientId);
+    if (!existingClient) {
+        return res.status(404).json({ responseCode: "24", responseMessage: "Client not found" });
+    }
+    if (existingClient.status !== "active") {
+        return res.status(404).json({ responseCode: "22", responseMessage: "Client awaiting approval." });
+    }
+    if (!existingClient.account) {
+        return res.status(404).json({ responseCode: "24", responseMessage: "Client does not have a linked account" });
+    }
 
-	// Automatically generate the invoice number and reference number
-	const invoiceNo = generateRandomNumberWithPrefix('INV');
-	const referenceNumber = generateRandomNumberWithPrefix('REF');
+    const existingAccount = await Account.findOne({ _id: existingClient.account });
 
-	// Calculate total fee including VAT
-	const totalInvoiceFeePlusVat_usd =  invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
-	const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
+    // ── Resolve template based on bank name ─────────────────────────────────
+    const templateName = resolveTemplate(invoiceType, existingAccount?.bankName || "");
+    console.log(`[createInvoice] Using template: ${templateName} for bank: ${existingAccount?.bankName}`);
 
-	// Set additional invoice data
-	invoiceData.statusUpdateLink = "https://cheerful-cendol-19cd82.netlify.app/revenue";
-	invoiceData.invoiceNo = invoiceNo;
-	invoiceData.referenceNumber = referenceNumber;
-	invoiceData.transactionDate = transactionDate;
-	invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
-	invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
-	invoiceData.rateDate = transactionDate;
+    // Automatically generate the invoice number and reference number
+    const invoiceNo = generateRandomNumberWithPrefix('INV');
+    const referenceNumber = generateRandomNumberWithPrefix('REF');
 
-	// Handle dates properly
-	let cbnratedate = new Date(invoiceData.cbnratedate);
-	invoiceData.cbnratedate = cbnratedate;
+    // Calculate total fee including VAT
+    const totalInvoiceFeePlusVat_usd = invoiceData.totalInvoiceFee_usd + (invoiceData.totalInvoiceFee_usd * invoiceData.vat / 100);
+    const totalInvoiceFeePlusVat_ngn = invoiceData.totalInvoiceFee_ngn + (invoiceData.totalInvoiceFee_ngn * invoiceData.vat / 100);
 
-	// Set due date (14 days after transaction date)
-	let newDate = new Date(transactionDate);
-	newDate.setDate(newDate.getDate() + 14);
-	invoiceData.transactionDueDate = newDate;
+    // Set additional invoice data
+    invoiceData.statusUpdateLink = "https://cheerful-cendol-19cd82.netlify.app/revenue";
+    invoiceData.invoiceNo = invoiceNo;
+    invoiceData.referenceNumber = referenceNumber;
+    invoiceData.transactionDate = transactionDate;
+    invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
+    invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
+    invoiceData.rateDate = transactionDate;
 
-	// Set created by
-	invoiceData.createdBy = req.user._id;
+    // Handle dates properly
+    let cbnratedate = new Date(invoiceData.cbnratedate);
+    invoiceData.cbnratedate = cbnratedate;
 
-	// Process OTHER_INVOICES type specifically
-	if (invoiceType === 'OTHER_INVOICES') {
-		// Ensure services are properly formatted
-		invoiceData.otherInvoiceServices = invoiceData.otherInvoiceServices.map(service => {
-			return {
-				serviceid: service.serviceid,
-				servicename: service.servicename,
-				servicedescription: service.servicedescription,
-				trans_Count: service.trans_Count,
-				unit_Fee: service.unit_Fee,
-				total_fee: service.trans_Count * service.unit_Fee
-			};
-		});
+    // Set due date (14 days after transaction date)
+    let newDate = new Date(transactionDate);
+    newDate.setDate(newDate.getDate() + 14);
+    invoiceData.transactionDueDate = newDate;
 
-		// Calculate totals for OTHER_INVOICES
-		const totalOtherServices = invoiceData.otherInvoiceServices.reduce((total, service) => {
-			return total + (service.trans_Count * service.unit_Fee);
-		}, 0);
+    // Set created by
+    invoiceData.createdBy = req.user._id;
 
-		// Update invoice data with calculated totals
-		invoiceData.totalInvoiceFee_usd = totalOtherServices;
-		invoiceData.totalInvoiceFee_ngn = invoiceData.currency !== "NGN" ? totalOtherServices * invoiceData.rate : totalOtherServices;
+    // Process OTHER_INVOICES type specifically
+    if (invoiceType === 'OTHER_INVOICES') {
+        invoiceData.otherInvoiceServices = invoiceData.otherInvoiceServices.map(service => {
+            return {
+                serviceid: service.serviceid,
+                servicename: service.servicename,
+                servicedescription: service.servicedescription,
+                trans_Count: service.trans_Count,
+                unit_Fee: service.unit_Fee,
+                total_fee: service.trans_Count * service.unit_Fee
+            };
+        });
 
-		// Update total with VAT
-		invoiceData.totalInvoiceFeePlusVat_usd = totalOtherServices + (totalOtherServices * invoiceData.vat / 100);
-		invoiceData.totalInvoiceFeePlusVat_ngn = (invoiceData.currency !== "NGN" ?
-				(totalOtherServices + (totalOtherServices * invoiceData.vat / 100)) * invoiceData.rate :
-				totalOtherServices + (totalOtherServices * invoiceData.vat / 100));
-	}
+        const totalOtherServices = invoiceData.otherInvoiceServices.reduce((total, service) => {
+            return total + (service.trans_Count * service.unit_Fee);
+        }, 0);
 
-	// Create invoice record
-	const newInvoice = new Revenue(invoiceData);
-	const savedInvoice = await newInvoice.save();
+        invoiceData.totalInvoiceFee_usd = totalOtherServices;
+        invoiceData.totalInvoiceFee_ngn = invoiceData.currency !== "NGN" ? totalOtherServices * invoiceData.rate : totalOtherServices;
+        invoiceData.totalInvoiceFeePlusVat_usd = totalOtherServices + (totalOtherServices * invoiceData.vat / 100);
+        invoiceData.totalInvoiceFeePlusVat_ngn = (invoiceData.currency !== "NGN" ?
+            (totalOtherServices + (totalOtherServices * invoiceData.vat / 100)) * invoiceData.rate :
+            totalOtherServices + (totalOtherServices * invoiceData.vat / 100));
+    }
 
-	// Update client's total invoice amount
-	const totalInvoices = await Revenue.aggregate([
-		{ $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
-		{ $group: { _id: null, clientTotalInvoice: { $sum: "$amountDue" } } }
-	]);
+    // Create invoice record
+    const newInvoice = new Revenue(invoiceData);
+    const savedInvoice = await newInvoice.save();
 
-	existingClient.clientTotalInvoice = totalInvoices[0]?.clientTotalInvoice || 0;
-	await recalculateClientTotals(invoiceData.clientId);
+    // Update client's total invoice amount
+    const totalInvoices = await Revenue.aggregate([
+        { $match: { clientId: new mongoose.Types.ObjectId(clientId) } },
+        { $group: { _id: null, clientTotalInvoice: { $sum: "$amountDue" } } }
+    ]);
 
-	// Handle tax and other logic
-	const taxRate = determineTaxRate(savedInvoice);
-	const taxAmount = savedInvoice.totalInvoiceFee_ngn * (savedInvoice.vat / 100);
-	const netAmount = savedInvoice.totalInvoiceFee_ngn - taxAmount;
+    existingClient.clientTotalInvoice = totalInvoices[0]?.clientTotalInvoice || 0;
+    await recalculateClientTotals(invoiceData.clientId);
 
-	const taxEntity = new Tax({
-		taxId: generateRandomNumberWithPrefix('TAX'),
-		invoiceNo: savedInvoice.invoiceNo,
-		clientId: savedInvoice.clientId,
-		taxType: "VAT", // Example tax type
-		totalAmount: savedInvoice.totalInvoiceFee_ngn,
-		taxRate: savedInvoice.vat || 7.5,
-		taxAmountDeducted: taxAmount,
-		netAmount: netAmount,
-		companyId: savedInvoice.companyId,
-		createdBy: savedInvoice.createdBy
-	});
-	await taxEntity.save();
+    // Handle tax and other logic
+    const taxRate = determineTaxRate(savedInvoice);
+    const taxAmount = savedInvoice.totalInvoiceFee_ngn * (savedInvoice.vat / 100);
+    const netAmount = savedInvoice.totalInvoiceFee_ngn - taxAmount;
 
-	let clientIdd = savedInvoice.clientId;
-	const whtRate = invoiceData.wht || 10; // Assume a default WHT rate if not provided
-	const whtAmount = savedInvoice.totalInvoiceFee_ngn * (whtRate / 100);
-	const whtEntity = new WHT({
-		whtId: generateRandomNumberWithPrefix('WHT'),
-		invoiceNo: savedInvoice.invoiceNo,
-		clientId: savedInvoice.clientId,
-		totalTransactionAmount: savedInvoice.totalInvoiceFee_ngn,
-		whtRate: whtRate,
-		whtAmount: whtAmount,
-		status: "unpaid",
-		createdBy: savedInvoice.createdBy
-	});
+    const taxEntity = new Tax({
+        taxId: generateRandomNumberWithPrefix('TAX'),
+        invoiceNo: savedInvoice.invoiceNo,
+        clientId: savedInvoice.clientId,
+        taxType: "VAT",
+        totalAmount: savedInvoice.totalInvoiceFee_ngn,
+        taxRate: savedInvoice.vat || 7.5,
+        taxAmountDeducted: taxAmount,
+        netAmount: netAmount,
+        companyId: savedInvoice.companyId,
+        createdBy: savedInvoice.createdBy
+    });
+    await taxEntity.save();
 
-	await existingClient.save();
-	await whtEntity.save();
+    let clientIdd = savedInvoice.clientId;
+    const whtRate = invoiceData.wht || 10;
+    const whtAmount = savedInvoice.totalInvoiceFee_ngn * (whtRate / 100);
+    const whtEntity = new WHT({
+        whtId: generateRandomNumberWithPrefix('WHT'),
+        invoiceNo: savedInvoice.invoiceNo,
+        clientId: savedInvoice.clientId,
+        totalTransactionAmount: savedInvoice.totalInvoiceFee_ngn,
+        whtRate: whtRate,
+        whtAmount: whtAmount,
+        status: "unpaid",
+        createdBy: savedInvoice.createdBy
+    });
 
-	const existingTax = await Tax.findOne({clientId: clientIdd});
-	const combinedObj = {
-		...existingClient,
-		taxAmountDeducted: taxAmount,
-		netAmount: netAmount,
-		...invoiceData,
-		phone: existingClient.phone,
-		name: existingClient.name,
-		email: existingClient.email,
-		firstname: user.name || user.firstname
-	};
+    await existingClient.save();
+    await whtEntity.save();
 
-	const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
-	let formatDate = new Date(transactionDate).toLocaleDateString();
+    const combinedObj = {
+        ...existingClient.toObject(),
+        taxAmountDeducted: taxAmount,
+        netAmount: netAmount,
+        ...invoiceData,
+        phone: existingClient.phone,
+        name: existingClient.name,
+        email: existingClient.email,
+        firstname: user.name || user.firstname
+    };
 
-	// Choose the appropriate template based on invoice type
-	let templateName = "acs_rba_invoice.ejs";
-	if (invoiceType === "OUTSOURCING" || invoiceType === "CONSULTATION" || invoiceType === "TRAINING" || invoiceType === "LICENSE") {
-		templateName = "acs_rba_invoice.ejs";
-	} else if (invoiceType === "OTHER_INVOICES") {
-		templateName = "acs_rba_invoice.ejs";
-	}
+    const emailContentClient = generateEmailContent('client', combinedObj, existingClient);
+    let formatDate = new Date(transactionDate).toLocaleDateString();
 
-	const pdfInvoice = await pdfGenerate({
-		invoiceType,
-		transactionDate: formatDate,
-		invoiceNo,
-		transactionDueDate: newDate.toLocaleDateString(),
-		currency: savedInvoice.currency,
-		data: combinedObj,
-		accountName: existingAccount.accountName,
-		accountNumber: existingAccount.accountNumber,
-		bankName: existingAccount.bankName,
-		phone: existingClient.phone,
-		name: existingClient.name,
-		clientname: existingClient.name,
-		email: existingClient.email,
-		taxName: "Global SJX Limited",
-		taxNumber: "10582697-0001"
-	}, templateName);
+    // ── Build the PDF payload ────────────────────────────────────────────────
+    // For FCMB invoices the template expects two extra fields:
+    //   • wibmoAmount       (number)  – portion payable to Wibmo Inc
+    //   • gsjxAmount        (number)  – portion payable to Global SJX
+    //   • wibmoAmountInWords (string)
+    //   • gsjxAmountInWords  (string)
+    // These should come in from the request body when the FCMB template is used.
+    // If they are absent the template gracefully hides those rows.
+    const pdfPayload = {
+        invoiceType,
+        transactionDate: formatDate,
+        invoiceNo,
+        transactionDueDate: newDate.toLocaleDateString(),
+        currency: savedInvoice.currency,
+        data: combinedObj,
+        accountName: existingAccount.accountName,
+        accountNumber: existingAccount.accountNumber,
+        bankName: existingAccount.bankName,
+        phone: existingClient.phone,
+        name: existingClient.name,
+        clientname: existingClient.name,
+        email: existingClient.email,
+        taxName: "Global SJX Limited",
+        taxNumber: "10582697-0001",
+        // FCMB-specific breakdown fields (safe to include for all; template ignores if absent)
+        wibmoAmount: invoiceData.wibmoAmount || null,
+        wibmoAmountInWords: invoiceData.wibmoAmountInWords || "",
+        gsjxAmount: invoiceData.gsjxAmount || null,
+        gsjxAmountInWords: invoiceData.gsjxAmountInWords || "",
+    };
 
-	const attachment = {
-		filename: "Invoice.pdf",
-		content: pdfInvoice,
-		contentType: "application/pdf"
-	};
+    const pdfInvoice = await pdfGenerate(pdfPayload, templateName);
 
-	// Send email to client
-	emailService.sendEmail(user.email, 'Invoice Created', emailContentClient, "", [attachment]);
+    const attachment = {
+        filename: "Invoice.pdf",
+        content: pdfInvoice,
+        contentType: "application/pdf"
+    };
 
-	// // Send email to backoffice
-	// const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
-	// backofficeEmails.forEach(user => {
-	// 	const emailContentAdmin = generateEmailContent('admin', combinedObj, existingClient);
-	// 	sendEmail(user.email, 'Invoice Created', emailContentAdmin, "", [attachment]);
-	// });
+    // Send email to client
+    emailService.sendEmail(user.email, 'Invoice Created', emailContentClient, "", [attachment]);
 
-	res.status(201).json({
-		responseCode: "00",
-		responseMessage: "Invoice created successfully",
-		responseData: savedInvoice
-	});
+    res.status(201).json({
+        responseCode: "00",
+        responseMessage: "Invoice created successfully",
+        responseData: savedInvoice
+    });
 
-	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
+    await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
 });
-// @route   PUT /api/revenue/updateInvoice/:id
-// @access  Private
+
+
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
 exports.updateInvoice = asyncHandler(async (req, res, next) => {
-	try {
-		const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-		const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
-			new: true,
-			runValidators: true,
-		});
-		console.log(updatedInvoice)
-		const existingClient = await Client.findById(updatedInvoice.clientId);
-		const user = await User.findById(req.user._id);
-		if (!mongoose.Types.ObjectId.isValid(id)) {
-			return res.status(400).json({ success: false, responseCode: "22",
-				responseMessage: 'Invalid invoice ID' });
-		}
-		if (!updatedInvoice) {
-			return res.status(404).json({ success: false, responseCode: "22",
-				responseMessage: 'Invoice not found' });
-		}
-		if (updatedInvoice.status === "rejected"){
-			const backofficeEmails = await User.find({ role: { $in: ['frontOffice', 'admin', 'superadmin'] } });
-			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateEmailRejectedContent('admin', updatedInvoice, existingClient);
-				emailService.sendEmail(user.email, 'Invoice Rejected', emailContentAdmin, "");
-			});
-			return res.status(200).json({
-				responseCode: "00",
-				responseMessage: "Invoice updated successfully",
-				responseData: updatedInvoice
-			});
-		}
-		let newDate = new Date(updatedInvoice.transactionDate);
-		newDate.setDate(newDate.getDate() + 14);
-		const totalInvoiceFeePlusVat_usd = updatedInvoice.taxOption ? updatedInvoice.totalInvoiceFee_usd + (updatedInvoice.totalInvoiceFee_usd * updatedInvoice.vat / 100) : updatedInvoice.totalInvoiceFee_usd;
-		const totalInvoiceFeePlusVat_ngn = updatedInvoice.taxOption ? updatedInvoice.totalInvoiceFee_ngn + (updatedInvoice.totalInvoiceFee_ngn * updatedInvoice.vat / 100) : updatedInvoice.totalInvoiceFee_ngn;
-		updatedInvoice.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn
-		updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd
-		updatedInvoice.save();
-		const combinedObj = {...updatedInvoice, ...existingClient};
-		const existingAccount = await Account.findOne({ _id: existingClient.account });
-		const pdfInvoice = await pdfGenerate({invoiceType: updatedInvoice.invoiceType, transactionDate: updatedInvoice.transactionDate.toLocaleDateString(), invoiceNo: updatedInvoice.invoiceNo, transactionDueDate: newDate.toLocaleDateString(), currency: updatedInvoice.currency, data: updatedInvoice, phone: existingClient.phone, name: existingClient.name,clientname:  existingClient.name, email: existingClient.email, accountName: existingAccount.accountName, accountNumber: existingAccount.accountNumber, bankName: existingAccount.bankName, taxName: "Global SJX Limited", taxNumber: "10582697-0001"}, "acs_rba_invoice.ejs");
-		const attachment = {
-			filename: "Invoice.pdf",
-			content: pdfInvoice,
-			contentType: "application/pdf"
-		};
-		await recalculateClientTotals(updatedInvoice.clientId);
-		// Send notif
-		if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
-			updatedInvoice.status = "paid";
-			await updatedInvoice.save();
+        const updatedInvoice = await Revenue.findByIdAndUpdate(id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+        console.log(updatedInvoice);
 
-			// Find the associated tax record and update its status to "paid"
-			const taxRecord = await Tax.findOne({ invoiceNo: updatedInvoice.invoiceNo });
-			const whtRecord = await WHT.findOne({ invoiceNo: updatedInvoice.invoiceNo });
+        const existingClient = await Client.findById(updatedInvoice.clientId);
+        const user = await User.findById(req.user._id);
 
-			if (taxRecord) {
-				taxRecord.status = "paid";
-				await taxRecord.save();
-			}
-			if (whtRecord){
-				whtRecord.status = "paid";
-				await whtRecord.save();
-			}
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, responseCode: "22", responseMessage: 'Invalid invoice ID' });
+        }
+        if (!updatedInvoice) {
+            return res.status(404).json({ success: false, responseCode: "22", responseMessage: 'Invoice not found' });
+        }
 
-			const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
-			const attachment = {
-				filename: "Invoice.pdf",
-				content: pdfInvoice,
-				contentType: "application/pdf"
-			};
-			await emailService.sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
-			existingClient.email.forEach((person)=> {
-				emailService.sendEmail(person, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
-			})
-			emailService.sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
-			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
-			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateCompleteEmailContent('admin', updatedInvoice, existingClient);
-				emailService.sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [attachment]);
-			});
+        if (updatedInvoice.status === "rejected") {
+            const backofficeEmails = await User.find({ role: { $in: ['frontOffice', 'admin', 'superadmin'] } });
+            backofficeEmails.forEach(user => {
+                const emailContentAdmin = generateEmailRejectedContent('admin', updatedInvoice, existingClient);
+                emailService.sendEmail(user.email, 'Invoice Rejected', emailContentAdmin, "");
+            });
+            return res.status(200).json({
+                responseCode: "00",
+                responseMessage: "Invoice updated successfully",
+                responseData: updatedInvoice
+            });
+        }
 
-			await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
+        let newDate = new Date(updatedInvoice.transactionDate);
+        newDate.setDate(newDate.getDate() + 14);
 
-			return res.status(200).json({
-				responseCode: "00",
-				responseMessage: "Invoice updated successfully",
-				responseData: updatedInvoice
-			});
-		}
-		else if (updatedInvoice.status === "approved"){
-			const attachment = {
-				filename: "Invoice.pdf",
-				content: pdfInvoice,
-				contentType: "application/pdf"
-			};
-			const emailContentClients = generateEmailContent('client', updatedInvoice, existingClient);
-			existingClient.email.forEach((person)=> {
-				emailService.sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
-			})
-			const emailContentClientss = generateEmailContent('admin', updatedInvoice, existingClient);
-			await emailService.sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
-			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
-			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
-				emailService.sendEmail(user.email, 'Invoice Approved', emailContentAdmin, "", [attachment]);
-			});
-		}
-		else{
-			const attachment = {
-				filename: "Invoice.pdf",
-				content: pdfInvoice,
-				contentType: "application/pdf"
-			};
-			const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
-			existingClient.email.forEach((person)=> {
-				emailService.sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
-			})
-			const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
-			backofficeEmails.forEach(user => {
-				const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
-				emailService.sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
-			});
-		}
-		await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
+        const totalInvoiceFeePlusVat_usd = updatedInvoice.taxOption
+            ? updatedInvoice.totalInvoiceFee_usd + (updatedInvoice.totalInvoiceFee_usd * updatedInvoice.vat / 100)
+            : updatedInvoice.totalInvoiceFee_usd;
+        const totalInvoiceFeePlusVat_ngn = updatedInvoice.taxOption
+            ? updatedInvoice.totalInvoiceFee_ngn + (updatedInvoice.totalInvoiceFee_ngn * updatedInvoice.vat / 100)
+            : updatedInvoice.totalInvoiceFee_ngn;
 
-		res.status(200).json({
-			responseCode: "00",
-			responseMessage: "Invoice updated successfully",
-			responseData: updatedInvoice
-		});
-	} catch (error) {
-		console.error(error); // Log the specific error
-		res.status(500).json({ success: false, responseCode: "00",
-			responseMessage: 'Internal server error' });
-	}
+        updatedInvoice.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
+        updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
+        updatedInvoice.save();
+
+        const existingAccount = await Account.findOne({ _id: existingClient.account });
+
+        // ── Resolve template based on bank name ──────────────────────────────
+        const templateName = resolveTemplate(updatedInvoice.invoiceType, existingAccount?.bankName || "");
+        console.log(`[updateInvoice] Using template: ${templateName} for bank: ${existingAccount?.bankName}`);
+
+        // ── Build PDF payload ────────────────────────────────────────────────
+        const pdfPayload = {
+            invoiceType: updatedInvoice.invoiceType,
+            transactionDate: updatedInvoice.transactionDate.toLocaleDateString(),
+            invoiceNo: updatedInvoice.invoiceNo,
+            transactionDueDate: newDate.toLocaleDateString(),
+            currency: updatedInvoice.currency,
+            data: updatedInvoice,
+            phone: existingClient.phone,
+            name: existingClient.name,
+            clientname: existingClient.name,
+            email: existingClient.email,
+            accountName: existingAccount.accountName,
+            accountNumber: existingAccount.accountNumber,
+            bankName: existingAccount.bankName,
+            taxName: "Global SJX Limited",
+            taxNumber: "10582697-0001",
+            // FCMB-specific breakdown fields
+            wibmoAmount: updatedInvoice.wibmoAmount || req.body.wibmoAmount || null,
+            wibmoAmountInWords: updatedInvoice.wibmoAmountInWords || req.body.wibmoAmountInWords || "",
+            gsjxAmount: updatedInvoice.gsjxAmount || req.body.gsjxAmount || null,
+            gsjxAmountInWords: updatedInvoice.gsjxAmountInWords || req.body.gsjxAmountInWords || "",
+        };
+
+        const pdfInvoice = await pdfGenerate(pdfPayload, templateName);
+
+        const attachment = {
+            filename: "Invoice.pdf",
+            content: pdfInvoice,
+            contentType: "application/pdf"
+        };
+
+        await recalculateClientTotals(updatedInvoice.clientId);
+
+        // Send notifications based on status
+        if (updatedInvoice.totalInvoiceFeePlusVat_ngn === updatedInvoice.amountPaid || updatedInvoice.status === "paid") {
+            updatedInvoice.status = "paid";
+            await updatedInvoice.save();
+
+            const taxRecord = await Tax.findOne({ invoiceNo: updatedInvoice.invoiceNo });
+            const whtRecord = await WHT.findOne({ invoiceNo: updatedInvoice.invoiceNo });
+
+            if (taxRecord) { taxRecord.status = "paid"; await taxRecord.save(); }
+            if (whtRecord) { whtRecord.status = "paid"; await whtRecord.save(); }
+
+            const emailContentClient = generateCompleteEmailContent('client', updatedInvoice, existingClient);
+            await emailService.sendEmail(existingClient.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
+            existingClient.email.forEach((person) => {
+                emailService.sendEmail(person, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
+            });
+            emailService.sendEmail(user.email, 'Payment - Acknowledgement', emailContentClient, "", [attachment]);
+
+            const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+            backofficeEmails.forEach(user => {
+                const emailContentAdmin = generateCompleteEmailContent('admin', updatedInvoice, existingClient);
+                emailService.sendEmail(user.email, 'Payment - Acknowledgement', emailContentAdmin, "", [attachment]);
+            });
+
+            await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
+
+            return res.status(200).json({
+                responseCode: "00",
+                responseMessage: "Invoice updated successfully",
+                responseData: updatedInvoice
+            });
+        } else if (updatedInvoice.status === "approved") {
+            const emailContentClients = generateEmailContent('client', updatedInvoice, existingClient);
+            existingClient.email.forEach((person) => {
+                emailService.sendEmail(person, 'Invoice Created', emailContentClients, "", [attachment]);
+            });
+            const emailContentClientss = generateEmailContent('admin', updatedInvoice, existingClient);
+            await emailService.sendEmail(user.email, 'Invoice Approved', emailContentClientss, "", [attachment]);
+
+            const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+            backofficeEmails.forEach(user => {
+                const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
+                emailService.sendEmail(user.email, 'Invoice Approved', emailContentAdmin, "", [attachment]);
+            });
+        } else {
+            const emailContentClient = generateUpdateEmailContent('client', updatedInvoice, existingClient);
+            existingClient.email.forEach((person) => {
+                emailService.sendEmail(person, 'Invoice Updated', emailContentClient, "", [attachment]);
+            });
+            const backofficeEmails = await User.find({ role: { $in: ['admin', 'backoffice', "superadmin"] } });
+            backofficeEmails.forEach(user => {
+                const emailContentAdmin = generateUpdateEmailContent('admin', updatedInvoice, existingClient);
+                emailService.sendEmail(user.email, 'Invoice Updated', emailContentAdmin, "", [attachment]);
+            });
+        }
+
+        await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'updated_invoice', "Revenue Management", `Updated invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
+
+        res.status(200).json({
+            responseCode: "00",
+            responseMessage: "Invoice updated successfully",
+            responseData: updatedInvoice
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, responseCode: "00", responseMessage: 'Internal server error' });
+    }
 });
 
 
@@ -704,263 +738,219 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
 exports.printInvoice = asyncHandler(async (req, res) => {
-	try {
-		const { id } = req.params;
-		let invoice;
+    try {
+        const { id } = req.params;
+        let invoice;
 
-		// Check if the parameter contains "INV" to determine search method
-		if (id.includes("INV")) {
-			// Search by invoiceNo
-			invoice = await Revenue.findOne({ invoiceNo: id });
-		} else {
-			// Search by ID
-			invoice = await Revenue.findById(id);
-		}
+        if (id.includes("INV")) {
+            invoice = await Revenue.findOne({ invoiceNo: id });
+        } else {
+            invoice = await Revenue.findById(id);
+        }
 
-		if (!invoice) {
-			return res.status(404).json({
-				success: false,
-				error: 'Invoice not found'
-			});
-		}
+        if (!invoice) {
+            return res.status(404).json({ success: false, error: 'Invoice not found' });
+        }
 
-		res.status(200).json({
-			responseCode: "00",
-			responseMessage: "Completed successfully",
-			responseData: invoice,
-		});
-	} catch (error) {
-		console.error('Error in printInvoice:', error.message);
-		res.status(500).json({
-			success: false,
-			error: 'Internal Server Error'
-		});
-	}
+        res.status(200).json({
+            responseCode: "00",
+            responseMessage: "Completed successfully",
+            responseData: invoice,
+        });
+    } catch (error) {
+        console.error('Error in printInvoice:', error.message);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
 });
 
-// Backend function to download invoice PDF
+
+// @desc    Download invoice as PDF
+// @route   GET /api/revenue/downloadInvoice/:id
+// @access  Private
 exports.downloadInvoice = asyncHandler(async (req, res, next) => {
-	try {
-		const { id } = req.params;
-		console.log(id)
-		// Validate invoice ID
-		if (!mongoose.Types.ObjectId.isValid(id)) {
-			return res.status(400).json({
-				success: false,
-				responseCode: "22",
-				responseMessage: 'Invalid invoice ID'
-			});
-		}
+    try {
+        const { id } = req.params;
+        console.log(id);
 
-		// Find the invoice
-		const invoice = await Revenue.findById(id);
-		if (!invoice) {
-			return res.status(404).json({
-				success: false,
-				responseCode: "22",
-				responseMessage: 'Invoice not found'
-			});
-		}
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, responseCode: "22", responseMessage: 'Invalid invoice ID' });
+        }
 
-		// Find client and account details
-		const existingClient = await Client.findById(invoice.clientId);
-		if (!existingClient) {
-			return res.status(404).json({
-				success: false,
-				responseCode: "22",
-				responseMessage: 'Client not found'
-			});
-		}
+        const invoice = await Revenue.findById(id);
+        if (!invoice) {
+            return res.status(404).json({ success: false, responseCode: "22", responseMessage: 'Invoice not found' });
+        }
 
-		const existingAccount = await Account.findOne({ _id: existingClient.account });
+        const existingClient = await Client.findById(invoice.clientId);
+        if (!existingClient) {
+            return res.status(404).json({ success: false, responseCode: "22", responseMessage: 'Client not found' });
+        }
 
-		// Calculate due date (14 days from transaction date)
-		let newDate = new Date(invoice.transactionDate);
-		newDate.setDate(newDate.getDate() + 14);
+        const existingAccount = await Account.findOne({ _id: existingClient.account });
 
-		// Calculate total with VAT if applicable (same as update function)
-		const totalInvoiceFeePlusVat_usd = invoice.taxOption ?
-			invoice.totalInvoiceFee_usd + (invoice.totalInvoiceFee_usd * invoice.vat / 100) :
-			invoice.totalInvoiceFee_usd;
-		const totalInvoiceFeePlusVat_ngn = invoice.taxOption ?
-			invoice.totalInvoiceFee_ngn + (invoice.totalInvoiceFee_ngn * invoice.vat / 100) :
-			invoice.totalInvoiceFee_ngn;
+        // ── Resolve template based on bank name ──────────────────────────────
+        const templateName = resolveTemplate(invoice.invoiceType, existingAccount?.bankName || "");
+        console.log(`[downloadInvoice] Using template: ${templateName} for bank: ${existingAccount?.bankName}`);
 
-		// Update the invoice object with calculated values (same as update function)
-		const updatedInvoiceData = {
-			...invoice.toObject(),
-			totalInvoiceFeePlusVat_ngn,
-			totalInvoiceFeePlusVat_usd
-		};
+        // Calculate due date (14 days from transaction date)
+        let newDate = new Date(invoice.transactionDate);
+        newDate.setDate(newDate.getDate() + 14);
 
-		console.log('Generating PDF for invoice:', invoice.invoiceNo);
+        const totalInvoiceFeePlusVat_usd = invoice.taxOption
+            ? invoice.totalInvoiceFee_usd + (invoice.totalInvoiceFee_usd * invoice.vat / 100)
+            : invoice.totalInvoiceFee_usd;
+        const totalInvoiceFeePlusVat_ngn = invoice.taxOption
+            ? invoice.totalInvoiceFee_ngn + (invoice.totalInvoiceFee_ngn * invoice.vat / 100)
+            : invoice.totalInvoiceFee_ngn;
 
-		// Generate PDF using the exact same data structure as update function
-		const pdfInvoice = await pdfGenerate({
-			invoiceType: invoice.invoiceType,
-			transactionDate: invoice.transactionDate.toLocaleDateString(),
-			invoiceNo: invoice.invoiceNo,
-			transactionDueDate: newDate.toLocaleDateString(),
-			currency: invoice.currency,
-			data: updatedInvoiceData, // Use the updated data object
-			phone: existingClient.phone,
-			name: existingClient.name,
-			clientname: existingClient.name,
-			email: existingClient.email,
-			accountName: existingAccount ? existingAccount.accountName : '',
-			accountNumber: existingAccount ? existingAccount.accountNumber : '',
-			bankName: existingAccount ? existingAccount.bankName : '',
-			taxName: "Global SJX Limited",
-			taxNumber: "10582697-0001"
-		}, "acs_rba_invoice.ejs");
+        const updatedInvoiceData = {
+            ...invoice.toObject(),
+            totalInvoiceFeePlusVat_ngn,
+            totalInvoiceFeePlusVat_usd
+        };
 
-		console.log('PDF generated successfully, buffer length:', pdfInvoice.length);
+        console.log('Generating PDF for invoice:', invoice.invoiceNo);
 
-		// Verify PDF buffer is valid
-		if (!pdfInvoice || pdfInvoice.length === 0) {
-			throw new Error('PDF generation failed - empty buffer');
-		}
+        // ── Build PDF payload ────────────────────────────────────────────────
+        const pdfPayload = {
+            invoiceType: invoice.invoiceType,
+            transactionDate: invoice.transactionDate.toLocaleDateString(),
+            invoiceNo: invoice.invoiceNo,
+            transactionDueDate: newDate.toLocaleDateString(),
+            currency: invoice.currency,
+            data: updatedInvoiceData,
+            phone: existingClient.phone,
+            name: existingClient.name,
+            clientname: existingClient.name,
+            email: existingClient.email,
+            accountName: existingAccount ? existingAccount.accountName : '',
+            accountNumber: existingAccount ? existingAccount.accountNumber : '',
+            bankName: existingAccount ? existingAccount.bankName : '',
+            taxName: "Global SJX Limited",
+            taxNumber: "10582697-0001",
+            // FCMB-specific breakdown fields (stored on the invoice document if saved)
+            wibmoAmount: invoice.wibmoAmount || null,
+            wibmoAmountInWords: invoice.wibmoAmountInWords || "",
+            gsjxAmount: invoice.gsjxAmount || null,
+            gsjxAmountInWords: invoice.gsjxAmountInWords || "",
+        };
 
-		// Set response headers for PDF download
-		res.setHeader('Content-Type', 'application/pdf');
-		res.setHeader('Content-Disposition', `attachment; filename="Invoice_${invoice.invoiceNo}.pdf"`);
-		res.setHeader('Content-Length', pdfInvoice.length);
-		res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-		res.setHeader('Pragma', 'no-cache');
-		res.setHeader('Expires', '0');
+        const pdfInvoice = await pdfGenerate(pdfPayload, templateName);
 
-		// Send the PDF buffer
-		res.end(pdfInvoice);
+        console.log('PDF generated successfully, buffer length:', pdfInvoice.length);
 
-	} catch (error) {
-		console.error('Download invoice error:', error);
+        if (!pdfInvoice || pdfInvoice.length === 0) {
+            throw new Error('PDF generation failed - empty buffer');
+        }
 
-		// Make sure we don't send headers twice
-		if (!res.headersSent) {
-			res.status(500).json({
-				success: false,
-				responseCode: "01",
-				responseMessage: 'Internal server error: ' + error.message
-			});
-		}
-	}
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Invoice_${invoice.invoiceNo}.pdf"`);
+        res.setHeader('Content-Length', pdfInvoice.length);
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
+        res.end(pdfInvoice);
+
+    } catch (error) {
+        console.error('Download invoice error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, responseCode: "01", responseMessage: 'Internal server error: ' + error.message });
+        }
+    }
 });
 
-// @desc    Spool invoices based on filters (client-wise, monthly, quarterly, yearly)
+
+// @desc    Spool invoices based on filters
 // @route   GET /api/revenue/spoolInvoices
 // @access  Private
 exports.spoolInvoices = asyncHandler(async (req, res) => {
-	const { client, startDate, endDate } = req.query;
+    const { client, startDate, endDate } = req.query;
 
-	const query = { status: { $ne: 'deleted' } };
+    const query = { status: { $ne: 'deleted' } };
 
-	if (client) query.client = client;
-	if (startDate && endDate) {
-		query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-	}
+    if (client) query.client = client;
+    if (startDate && endDate) {
+        query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
 
-	let invoices = await Revenue.find(query)
-		.sort({ status: 1, updatedAt: -1, createdAt: -1 }) // Prioritize "paid" status and sort by recent updates/creation
-		.exec();
+    let invoices = await Revenue.find(query)
+        .sort({ status: 1, updatedAt: -1, createdAt: -1 })
+        .exec();
 
-	if (invoices.length > 0) {
-		res.status(200).json({
-			responseCode: "00",
-			responseMessage: "Invoices spooled successfully",
-			responseData: invoices
-		});
-	} else {
-		res.status(200).json({
-			responseCode: "22",
-			responseMessage: "No invoices found."
-		});
-	}
+    if (invoices.length > 0) {
+        res.status(200).json({ responseCode: "00", responseMessage: "Invoices spooled successfully", responseData: invoices });
+    } else {
+        res.status(200).json({ responseCode: "22", responseMessage: "No invoices found." });
+    }
 });
 
+
 exports.getInvoiceData = async (invoiceNo) => {
-	try {
-		// Fetch the invoice data from the database
-		const invoiceData = await Revenue.findOne({ invoiceNo });
+    try {
+        const invoiceData = await Revenue.findOne({ invoiceNo });
+        if (!invoiceData) throw new Error('Invoice not found');
+        return invoiceData;
+    } catch (error) {
+        console.error('Error fetching invoice data:', error.message);
+        throw error;
+    }
+};
 
-		// Check if the invoice exists
-		if (!invoiceData) {
-			throw new Error('Invoice not found');
-		}
-
-		// Return the fetched invoice data
-		return invoiceData;
-	} catch (error) {
-		console.error('Error fetching invoice data:', error.message);
-		throw error; // Rethrow the error to be handled by the calling function
-	}
-}
 
 // @desc    Track payment status of an invoice
 // @route   GET /api/revenue/trackInvoice/:id
 // @access  Private
 exports.trackInvoice = asyncHandler(async (req, res) => {
-	const { id } = req.params;
-
-	const invoice = await Revenue.findById(id);
-
-	if (!invoice) {
-		return res.status(404).json({ success: false, error: 'Invoice not found' });
-	}
-
-	res.status(200).json({ success: true, message: 'Invoice status retrieved successfully', status: invoice.status });
+    const { id } = req.params;
+    const invoice = await Revenue.findById(id);
+    if (!invoice) return res.status(404).json({ success: false, error: 'Invoice not found' });
+    res.status(200).json({ success: true, message: 'Invoice status retrieved successfully', status: invoice.status });
 });
 
-// @desc    Send a payment reminder for unpaid invoices (Functionality Removed)
+
+// @desc    Send a payment reminder (disabled)
 // @route   POST /api/revenue/sendReminder/:id
 // @access  Private
 exports.sendReminder = asyncHandler(async (req, res) => {
-	res.status(200).json({ success: true, message: 'Payment reminder functionality is currently disabled' });
+    res.status(200).json({ success: true, message: 'Payment reminder functionality is currently disabled' });
 });
 
-// @desc    Generate and send payment receipt for a paid invoice (Functionality Removed)
+
+// @desc    Generate and send receipt (disabled)
 // @route   POST /api/revenue/generateReceipt/:id
 // @access  Private
 exports.generateReceipt = asyncHandler(async (req, res) => {
-	res.status(200).json({ success: true, message: 'Receipt generation functionality is currently disabled' });
+    res.status(200).json({ success: true, message: 'Receipt generation functionality is currently disabled' });
 });
+
 
 exports.softDelete = asyncHandler(async (req, res) => {
-	// Soft delete the revenue by updating its status
-	const revenue = await Revenue.findByIdAndUpdate(req.body.id, { status: 'deleted' });
+    const revenue = await Revenue.findByIdAndUpdate(req.body.id, { status: 'deleted' });
 
-	if (!revenue) {
-		return res.status(404).json({
-			responseCode: "01",
-			responseMessage: "Revenue not found"
-		});
-	}
+    if (!revenue) {
+        return res.status(404).json({ responseCode: "01", responseMessage: "Revenue not found" });
+    }
 
-	// Recalculate client totals
-	await recalculateClientTotals(revenue.clientId);
+    await recalculateClientTotals(revenue.clientId);
+    await Tax.deleteMany({ invoiceNo: revenue.invoiceNo });
+    await WHT.deleteMany({ invoiceNo: revenue.invoiceNo });
 
-	// Find and delete taxes associated with this revenue's invoiceNo
-	await Tax.deleteMany({ invoiceNo: revenue.invoiceNo });
-	await WHT.deleteMany({ invoiceNo: revenue.invoiceNo });
+    res.status(200).json({ responseCode: "00", responseMessage: "Revenue and associated taxes deleted successfully" });
 
-	res.status(200).json({
-		responseCode: "00",
-		responseMessage: "Revenue and associated taxes deleted successfully"
-	});
-	const existingClient = await Client.findById(revenue.clientId);
-	const user = await User.findById(req.user._id,); // Assuming you have a User model
-	await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'deleted_invoice', "Revenue Management", `Deleted invoice for client ${existingClient.name} by ${user.email}`, req.body.ip );
+    const existingClient = await Client.findById(revenue.clientId);
+    const user = await User.findById(req.user._id);
+    await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'deleted_invoice', "Revenue Management", `Deleted invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
 });
-
 
 
 exports.deleteInvoice = async (req, res) => {
-	try {
-		const deletedInvoice = await Revenue.findByIdAndDelete(req.params.id);
-		await recalculateClientTotals(deletedInvoice.clientId);
-
-		if (!deletedInvoice) return res.status(404).json({ message: 'Invoice not found' });
-		res.status(200).json({ message: 'Invoice deleted successfully' });
-	} catch (error) {
-		res.status(500).json({ error: error.message });
-	}
+    try {
+        const deletedInvoice = await Revenue.findByIdAndDelete(req.params.id);
+        await recalculateClientTotals(deletedInvoice.clientId);
+        if (!deletedInvoice) return res.status(404).json({ message: 'Invoice not found' });
+        res.status(200).json({ message: 'Invoice deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 };

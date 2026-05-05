@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCMB ACS Invoice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Montserrat", sans-serif;
+        }
+
+        body {
+            background: #fff;
+        }
+
+        /* ─── PAGE WRAPPER ─────────────────────────────────── */
+        .page {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 40px;
+            background: #fff;
+            page-break-after: always;
+        }
+        .page:last-child {
+            page-break-after: auto;
+        }
+
+        /* ─── HEADER ───────────────────────────────────────── */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+        }
+        .logo-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .logo-block img {
+            width: 80px;
+            height: 60px;
+            object-fit: contain;
+        }
+        .logo-block .rc {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .company-address {
+            text-align: right;
+        }
+        .company-address h2 {
+            font-size: 14px;
+            font-weight: 700;
+            font-style: italic;
+            color: #6635AB;
+            margin-bottom: 4px;
+        }
+        .company-address p {
+            font-size: 10px;
+            line-height: 1.5;
+            color: #333;
+        }
+        .company-address p span {
+            font-style: italic;
+        }
+
+        /* ─── TITLE BANNER ─────────────────────────────────── */
+        .invoice-title {
+            background: rgb(187,187,187);
+            color: #fff;
+            text-align: center;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            border-radius: 4px;
+            margin-bottom: 18px;
+        }
+
+        /* ─── DATE ROW ─────────────────────────────────────── */
+        .date-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+        .date-row .date-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .date-row p {
+            font-size: 11px;
+        }
+        .date-row p strong {
+            font-weight: 700;
+        }
+
+        /* ─── TABLES ───────────────────────────────────────── */
+        .section-header {
+            background: #f1f1f1;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 6px 6px 0 0;
+            text-transform: uppercase;
+            margin-top: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        table thead tr th {
+            background: #fff;
+            padding: 8px 10px;
+            font-weight: 700;
+            border-bottom: 1px solid #EFF0F4;
+            border-right: 1px solid #EFF0F4;
+            text-align: left;
+        }
+        table thead tr th:not(:first-child) {
+            text-align: right;
+        }
+
+        table tbody tr td {
+            padding: 8px 10px;
+            border-right: 1px solid #EFF0F4;
+            text-align: right;
+        }
+        table tbody tr td:first-child {
+            text-align: left;
+            width: 40%;
+        }
+        table tbody tr.row-border td {
+            border-bottom: 1px solid #EFF0F4;
+        }
+
+        table tfoot tr td {
+            background: rgb(187,187,187);
+            padding: 7px 10px;
+            font-weight: 700;
+            font-style: italic;
+            border-right: 1px solid #EFF0F4;
+            text-align: right;
+        }
+        table tfoot tr td:first-child {
+            text-align: left;
+        }
+
+        /* ─── TOTALS TABLE ─────────────────────────────────── */
+        .totals-table {
+            margin-top: 4px;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+        .totals-table td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #EFF0F4;
+            border-right: 1px solid #EFF0F4;
+        }
+        .totals-table td:first-child {
+            font-weight: 700;
+            text-align: left;
+            width: 80%;
+        }
+        .totals-table td:last-child {
+            text-align: right;
+            font-weight: 700;
+        }
+        .totals-table tr.grand-total td {
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        /* ─── AMOUNT IN WORDS ──────────────────────────────── */
+        .amount-words {
+            margin-top: 10px;
+            padding: 8px 10px;
+            font-size: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .amount-words strong {
+            font-weight: 700;
+        }
+        .amount-words span {
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        /* ─── FOOTER STRIP ─────────────────────────────────── */
+        .page-footer {
+            margin-top: 40px;
+            border-top: 2px solid #6635AB;
+            padding-top: 6px;
+        }
+        .page-footer p {
+            font-size: 9px;
+            font-style: italic;
+            color: #6635AB;
+            font-weight: 600;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           PAGE 2 – PAYMENT INSTRUCTION
+        ═══════════════════════════════════════════════════ */
+        .payment-page .logo-right {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            border: 1px solid #aaa;
+            margin-bottom: 20px;
+        }
+        .breakdown-table .bk-title {
+            background: #f1f1f1;
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px;
+            letter-spacing: 1px;
+        }
+        .breakdown-table th {
+            padding: 8px 12px;
+            border-bottom: 1px solid #aaa;
+            border-right: 1px solid #aaa;
+            font-weight: 700;
+            text-align: left;
+            background: #fff;
+        }
+        .breakdown-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #aaa;
+            border-right: 1px solid #aaa;
+        }
+        .breakdown-table td.fee {
+            text-align: right;
+            font-weight: 700;
+        }
+        .breakdown-table td.recipient {
+            font-style: italic;
+        }
+        .breakdown-table .instruction-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 8px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #aaa;
+            letter-spacing: 0.5px;
+        }
+        .breakdown-table .instruction-cell {
+            padding: 14px 16px;
+            font-size: 11px;
+            line-height: 1.8;
+        }
+        .breakdown-table .instruction-cell ol {
+            padding-left: 18px;
+        }
+        .breakdown-table .instruction-cell ol li {
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+        .breakdown-table .instruction-cell ol li strong {
+            font-style: normal;
+        }
+
+        /* Wire transfer inner box */
+        .wire-box {
+            border: 1px solid #aaa;
+            margin: 10px 0 10px 10px;
+            display: inline-block;
+            width: 70%;
+        }
+        .wire-box .wire-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 6px;
+            border-bottom: 1px solid #aaa;
+            letter-spacing: 0.5px;
+        }
+        .wire-box table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+        .wire-box table td {
+            padding: 6px 12px;
+            border: none;
+            vertical-align: top;
+        }
+        .wire-box table td:first-child {
+            font-weight: 600;
+            width: 45%;
+            text-align: left;
+        }
+        .wire-box table td:last-child {
+            text-align: left;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           PAGE 3 – ACCOUNT & TAX DETAILS
+        ═══════════════════════════════════════════════════ */
+        .details-page .logo-right {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 40px;
+        }
+        .details-section {
+            margin-bottom: 30px;
+        }
+        .details-section h2 {
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: underline;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .details-section p {
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .details-section p strong {
+            font-weight: 700;
+        }
+        .details-footer {
+            font-size: 11px;
+            font-style: italic;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        /* ─── PRINT ────────────────────────────────────────── */
+        @media print {
+            .page {
+                page-break-after: always;
+            }
+            .page:last-child {
+                page-break-after: auto;
+            }
+            body { background: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE 1 – AUTHENTICATION SERVICES INVOICE
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+    <!-- Header -->
+    <div class="header-row">
+        <div class="logo-block">
+            <img src="<%= logoBase64 %>" alt="Global SJX Logo" />
+            <span class="rc">RC: 918111</span>
+        </div>
+        <div class="company-address">
+            <h2>Global SJX Limited</h2>
+            <p>Block 3 Plot 57b, Fatai Arobieke Street,</p>
+            <p>Lekki Phase I, Lagos.</p>
+            <p><span>E-Mail: </span>talk2us@globalsjxltd.com</p>
+            <p><span>Website: </span>www.globalsjxltd.com</p>
+        </div>
+    </div>
+
+    <!-- Title -->
+    <div class="invoice-title">AUTHENTICATION SERVICES INVOICE</div>
+
+    <!-- Dates -->
+    <div class="date-row">
+        <div class="date-block">
+            <p><strong>Issue Date:</strong> <%= transactionDate %></p>
+            <p><strong>Invoice Ref:</strong> <%= invoiceNo %></p>
+        </div>
+        <div>
+            <p><strong>Due Date:</strong> <%= transactionDueDate %></p>
+        </div>
+    </div>
+
+    <!-- Section A: Authentication Fees -->
+    <% if (data.service1 && data.service1.transactions && data.service1.transactions[0] && data.service1.transactions[0].description) { %>
+    <div class="section-header">
+        A - AUTHENTICATION FEE FOR PERIOD:
+        <%= new Date(data.startDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) %>
+        –
+        <%= new Date(data.endDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) %>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Volume</th>
+                <th>Unit Fee (<%= data.currency === "USD" ? "$" : data.currency === "NGN" ? "₦" : "E" %>)</th>
+                <th>Total Fee (<%= data.currency === "USD" ? "$" : data.currency === "NGN" ? "₦" : "E" %>)</th>
+                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                    <th>Total Fee (₦)</th>
+                <% } %>
+            </tr>
+        </thead>
+        <tbody>
+            <% data.service1.transactions.forEach(function(transaction) { %>
+            <tr class="row-border">
+                <td><%= transaction.description %></td>
+                <td><%= transaction.volume.toLocaleString() %></td>
+                <td><%= transaction.unitfee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <td><%= transaction.totalfee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                    <td><%= transaction.totalfee_ngn.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% } %>
+            </tr>
+            <% }) %>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="<%= (data.currency !== 'NGN' && data.includeNairaAmount) ? 3 : 3 %>">Sub-Total – A</td>
+                <td></td>
+                <td><%= data.service1.serviceTotalFeeUsd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                    <td><%= data.service1.serviceTotalFeeNgn.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% } %>
+            </tr>
+        </tfoot>
+    </table>
+    <% } %>
+
+    <!-- Section B: Monthly Hosting Fee -->
+    <% if (data.service2 && data.service2.transactions && data.service2.transactions[0] && data.service2.transactions[0].description) { %>
+    <div class="section-header" style="margin-top: 16px;">
+        B - MONTHLY HOSTING FEE FOR PERIOD:
+        <%= new Date(data.startDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) %>
+        –
+        <%= new Date(data.endDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) %>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Volume</th>
+                <th>Unit Fee (<%= data.currency === "USD" ? "$" : data.currency === "NGN" ? "₦" : "E" %>)</th>
+                <th>Total Fee (<%= data.currency === "USD" ? "$" : data.currency === "NGN" ? "₦" : "E" %>)</th>
+                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                    <th>Total Fee (₦)</th>
+                <% } %>
+            </tr>
+        </thead>
+        <tbody>
+            <% data.service2.transactions.forEach(function(transaction) { %>
+            <tr class="row-border">
+                <td><%= transaction.description %></td>
+                <td><%= transaction.volume.toLocaleString() %></td>
+                <td><%= transaction.unitfee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <td><%= transaction.totalfee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                    <td><%= transaction.totalfee_ngn.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% } %>
+            </tr>
+            <% }) %>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3">Sub-Total – B</td>
+                <td></td>
+                <td><%= data.service2.serviceTotalFeeUsd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% if (data.currency !== 'NGN' && data.includeNairaAmount) { %>
+                    <td><%= data.service2.serviceTotalFeeNgn.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+                <% } %>
+            </tr>
+        </tfoot>
+    </table>
+    <% } %>
+
+    <!-- Totals -->
+    <table class="totals-table" style="margin-top: 8px;">
+        <tbody>
+            <tr>
+                <td>TOTAL FEE (A+B)</td>
+                <td><%= data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+            </tr>
+            <% if (data.taxOption) { %>
+            <tr>
+                <td>VAT</td>
+                <td><%= ((data.vat / 100) * data.totalInvoiceFee_usd).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+            </tr>
+            <% } %>
+            <tr class="grand-total">
+                <td>GRAND TOTAL in <%= data.currency %></td>
+                <td>
+                    <%= data.taxOption
+                        ? data.totalInvoiceFeePlusVat_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3})
+                        : data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Amount in Words -->
+    <div class="amount-words">
+        <strong>AMOUNT IN WORDS: </strong><span><%= data.amountInWords %></span>
+    </div>
+
+    <!-- Page Footer -->
+    <div class="page-footer">
+        <p>Directors: Sina Joseph MD/CEO (Nigerian) &nbsp; Folukemi Joseph (Nigerian) &nbsp; Omeiza Abuno (Nigerian)</p>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE 2 – PAYMENT INSTRUCTION
+══════════════════════════════════════════════════════════ -->
+<div class="page payment-page">
+
+    <!-- Logo top-right -->
+    <div class="logo-right">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <img src="<%= logoBase64 %>" alt="Global SJX Logo" style="width:80px; height:60px; object-fit:contain;" />
+        </div>
+    </div>
+
+    <!-- Payment Instruction Title -->
+    <div class="invoice-title">PAYMENT INSTRUCTION</div>
+
+    <!-- Breakdown Table -->
+    <table class="breakdown-table">
+        <!-- Breakdown header -->
+        <thead>
+            <tr>
+                <td colspan="3" class="bk-title">BREAKDOWN</td>
+            </tr>
+            <tr>
+                <th style="width:60%;">Description</th>
+                <th style="width:20%; text-align:center;">Recipient</th>
+                <th style="width:20%; text-align:right;">Fee (USD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Grand Total Row -->
+            <tr>
+                <td style="font-weight:700; text-transform:uppercase; font-size:11px;">
+                    ACS Transactions &amp; Monthly Rental Fees
+                </td>
+                <td></td>
+                <td class="fee">
+                    <%= data.taxOption
+                        ? data.totalInvoiceFeePlusVat_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3})
+                        : data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %>
+                </td>
+            </tr>
+
+            <!-- Amount due Wibmo -->
+            <% if (data.wibmoAmount) { %>
+            <tr>
+                <td>Amount Due Wibmo Inc</td>
+                <td class="recipient" style="text-align:center;">Wibmo Inc</td>
+                <td class="fee"><%= data.wibmoAmount.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+            </tr>
+            <% } %>
+
+            <!-- Amount due GSJX -->
+            <% if (data.gsjxAmount) { %>
+            <tr>
+                <td>Amount Due Global SJX Limited</td>
+                <td class="recipient" style="text-align:center;">GSJX</td>
+                <td class="fee"><%= data.gsjxAmount.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %></td>
+            </tr>
+            <% } %>
+
+            <!-- INSTRUCTION section header -->
+            <tr>
+                <td colspan="3" class="instruction-title">INSTRUCTION</td>
+            </tr>
+
+            <!-- Instructions body -->
+            <tr>
+                <td colspan="3" class="instruction-cell">
+                    <ol>
+                        <% if (data.wibmoAmount) { %>
+                        <li>
+                            Kindly transfer the sum of <strong><%= data.wibmoAmountInWords %> ($<%= data.wibmoAmount.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %>)</strong>
+                            to Wibmo Inc Account as detailed below:
+                            <br/><br/>
+                            <div class="wire-box">
+                                <div class="wire-title">INTERNATIONAL WIRE TRANSFER</div>
+                                <table>
+                                    <tr><td>PAY TO:</td><td>CITIBANK N.A<br/>DELAWARE, USA</td></tr>
+                                    <tr><td>ROUTING &amp; TRANSIT #:</td><td>\\ FW: 031100209</td></tr>
+                                    <tr><td>SWIFT CODE:</td><td>CITIUS33</td></tr>
+                                    <tr><td>FOR CREDIT OF:</td><td>WIBMO INC</td></tr>
+                                    <tr><td>FINAL CREDIT ACCOUNT #:</td><td>54185434</td></tr>
+                                </table>
+                            </div>
+                        </li>
+                        <% } %>
+
+                        <li>Kindly avail us the transfer receipt. Please send to <strong>sina.joseph@globalsjxltd.com</strong></li>
+
+                        <% if (data.gsjxAmount) { %>
+                        <li>
+                            Transfer the NGN equivalent of <strong><%= data.gsjxAmountInWords %> ($<%= data.gsjxAmount.toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) %>)</strong>
+                            to the NGN account of Global SJX Limited (Please find account details below)
+                        </li>
+                        <% } %>
+
+                        <li>Please ensure the NGN equivalent of the <strong>WHT</strong> is debited into Global SJX Limited NGN Account</li>
+                    </ol>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Page Footer -->
+    <div class="page-footer">
+        <p>Directors: Sina Joseph MD/CEO (Nigerian) &nbsp; Folukemi Joseph (Nigerian) &nbsp; Omeiza Abuno (Nigerian)</p>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE 3 – ACCOUNT DETAILS & TAX DETAILS
+══════════════════════════════════════════════════════════ -->
+<div class="page details-page">
+
+    <!-- Logo top-right -->
+    <div class="logo-right">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <img src="<%= logoBase64 %>" alt="Global SJX Logo" style="width:80px; height:60px; object-fit:contain;" />
+        </div>
+    </div>
+
+    <!-- Account Details -->
+    <div class="details-section">
+        <h2>Account Details</h2>
+        <p><strong>Name:</strong> <%= accountName %></p>
+        <p><strong>Number:</strong> <%= accountNumber %></p>
+        <p><strong>Bank:</strong> <%= bankName %></p>
+    </div>
+
+    <!-- Tax Details -->
+    <div class="details-section">
+        <h2>Tax Details</h2>
+        <p><strong>Name:</strong> Global SJX Limited</p>
+        <p><strong>VAT Number:</strong> 10582697-0001</p>
+        <p class="details-footer">(Kindly remit VAT to the above number)</p>
+    </div>
+
+    <!-- Watermark logo centered -->
+    <div style="display:flex; justify-content:center; margin-top:60px; opacity:0.15;">
+        <img src="<%= logoBase64 %>" alt="" style="width:220px; height:160px; object-fit:contain;" />
+    </div>
+
+    <!-- Page Footer -->
+    <div class="page-footer">
+        <p>Directors: Sina Joseph MD/CEO (Nigerian) &nbsp; Folukemi Joseph (Nigerian) &nbsp; Omeiza Abuno (Nigerian)</p>
+    </div>
+</div>
+
+</body>
+</html>
