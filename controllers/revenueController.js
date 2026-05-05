@@ -1,8 +1,8 @@
 const Revenue = require('../models/Revenue');
 const Tax = require('../models/Tax');
 const Client = require('../models/Client');
-const WHT = require('../models/WHT'); // Import the WHT model
-const { generatePDF, pdfGenerate} = require('../utils/pdfGenerator'); // Utility function to generate PDFs
+const WHT = require('../models/WHT');
+const { generatePDF, pdfGenerate} = require('../utils/pdfGenerator');
 const { check, validationResult } = require('express-validator');
 const path = require('path');
 const jsPDF = require('jspdf');
@@ -17,27 +17,15 @@ const emailService = require('../utils/emailService');
 const Account = require("../models/Account");
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  HELPER: Detect if this invoice belongs to FCMB
-//  Matches any variation of "First City Monument Bank" or "FCMB" (case-insensitive)
+//  HELPER: Detect if this invoice should use FCMB template
+//  Based on templateType field from frontend
 // ─────────────────────────────────────────────────────────────────────────────
-const isFCMBClient = (bankName = "") => {
-    const normalised = bankName.trim().toLowerCase();
-    return (
-        normalised === "fcmb" ||
-        normalised.includes("fcmb") ||
-        normalised.includes("first city monument bank") ||
-        normalised.includes("first city monument")
-    );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  HELPER: Choose the correct EJS template for a given invoice + account
-// ─────────────────────────────────────────────────────────────────────────────
-const resolveTemplate = (invoiceType, bankName = "") => {
-    if (isFCMBClient(bankName)) {
+const resolveTemplate = (templateType, invoiceType) => {
+    // If FCMB template is explicitly selected, use it
+    if (templateType === 'fcmb') {
         return "fcmb_invoice.ejs";
     }
-    // Default template for all other clients / invoice types
+    // Otherwise use the default template
     return "acs_rba_invoice.ejs";
 };
 
@@ -114,7 +102,6 @@ const generateEmailContent = (role, invoiceData, client) => {
     </html>
   `;
 
-    // Modify content for client-specific emails
     if (role === 'client') {
         emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
         emailContent = emailContent.replace('<span>Update Invoice</span>', '')
@@ -185,7 +172,6 @@ const generateUpdateEmailContent = (role, invoiceData, client) => {
     </html>
   `;
 
-    // Modify content for client-specific emails
     if (role === 'client') {
         emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
         emailContent = emailContent.replace('<span>Update Invoice</span>', '')
@@ -300,7 +286,6 @@ const generateEmailRejectedContent = (role, invoiceData, client) => {
     </html>
   `;
 
-    // Modify content for client-specific emails
     if (role === 'client') {
         emailContent = emailContent.replace('<p>Please click the button below to update the status of the invoice in the app:</p>', '');
         emailContent = emailContent.replace('<span>Update Invoice</span>', '')
@@ -309,25 +294,19 @@ const generateEmailRejectedContent = (role, invoiceData, client) => {
     return emailContent;
 };
 
-
-// Utility function to generate a random number with a specific prefix
 const generateRandomNumberWithPrefix = (prefix) => {
     return `${prefix}${Math.floor(10000 + Math.random() * 90000)}`;
 };
 
 const recalculateClientTotals = async (clientId) => {
     try {
-        // Validate the clientId
         if (!mongoose.Types.ObjectId.isValid(clientId)) {
             throw new Error('Invalid client ID');
         }
 
         const objectId = new mongoose.Types.ObjectId(clientId);
-
-        // Fetch all active (non-deleted) invoices for the client
         const invoices = await Revenue.find({ clientId: objectId, status: { $ne: 'deleted' } });
 
-        // Calculate totals
         let totalPaid = 0;
         let totalDue = 0;
         let totalAmount = 0;
@@ -338,7 +317,6 @@ const recalculateClientTotals = async (clientId) => {
             totalAmount += invoice.totalInvoiceFeePlusVat_ngn;
         });
 
-        // Update client totals
         await Client.findByIdAndUpdate(clientId, {
             clientAmountPaid: totalPaid,
             clientAmountDue: totalAmount - totalPaid,
@@ -354,7 +332,7 @@ const recalculateClientTotals = async (clientId) => {
 };
 
 function determineTaxRate(invoice) {
-    return 7.5; // Example VAT rate
+    return 7.5;
 }
 
 // @desc    Create a new invoice
@@ -369,8 +347,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
     await check('transactionDate', 'Transaction Date is required').notEmpty().run(req);
     const user = await User.findById(req.user._id);
 
-    // Extract relevant fields from req.body
-    const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate } = req.body;
+    const { invoiceType, service1, service2, roles, otherInvoiceServices, clientId, amountDue, transactionDate, templateType } = req.body;
 
     // Check required fields based on invoice type
     if ((invoiceType === 'ACS_RBA' || invoiceType === "RBA_ACS" || invoiceType === "ACS_RENTAL" || invoiceType === "RBA_RENTAL") && (!service1 || !service2)) {
@@ -402,9 +379,9 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 
     const existingAccount = await Account.findOne({ _id: existingClient.account });
 
-    // ── Resolve template based on bank name ─────────────────────────────────
-    const templateName = resolveTemplate(invoiceType, existingAccount?.bankName || "");
-    console.log(`[createInvoice] Using template: ${templateName} for bank: ${existingAccount?.bankName}`);
+    // ── Resolve template based on templateType from frontend ───────────────
+    const templateName = resolveTemplate(templateType || 'normal', invoiceType);
+    console.log(`[createInvoice] Using template: ${templateName} (templateType: ${templateType})`);
 
     // Automatically generate the invoice number and reference number
     const invoiceNo = generateRandomNumberWithPrefix('INV');
@@ -422,6 +399,7 @@ exports.createInvoice = asyncHandler(async (req, res) => {
     invoiceData.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
     invoiceData.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
     invoiceData.rateDate = transactionDate;
+    invoiceData.templateType = templateType || 'normal'; // Save template type
 
     // Handle dates properly
     let cbnratedate = new Date(invoiceData.cbnratedate);
@@ -460,6 +438,13 @@ exports.createInvoice = asyncHandler(async (req, res) => {
             totalOtherServices + (totalOtherServices * invoiceData.vat / 100));
     }
 
+    // Handle FCMB-specific amounts
+    if (templateType === 'fcmb') {
+        // Ensure wibmoAmount and gsjxAmount are saved as numbers
+        invoiceData.wibmoAmount = invoiceData.wibmoAmount ? parseFloat(invoiceData.wibmoAmount) : null;
+        invoiceData.gsjxAmount = invoiceData.gsjxAmount ? parseFloat(invoiceData.gsjxAmount) : null;
+    }
+
     // Create invoice record
     const newInvoice = new Revenue(invoiceData);
     const savedInvoice = await newInvoice.save();
@@ -488,6 +473,10 @@ exports.createInvoice = asyncHandler(async (req, res) => {
         taxAmountDeducted: taxAmount,
         netAmount: netAmount,
         companyId: savedInvoice.companyId,
+        companyName: savedInvoice.companyName,
+        sourceModel: 'Revenue',
+        sourceId: savedInvoice._id,
+        sourceType: 'invoice',
         createdBy: savedInvoice.createdBy
     });
     await taxEntity.save();
@@ -503,6 +492,10 @@ exports.createInvoice = asyncHandler(async (req, res) => {
         whtRate: whtRate,
         whtAmount: whtAmount,
         status: "unpaid",
+        companyName: savedInvoice.companyName,
+        sourceModel: 'Revenue',
+        sourceId: savedInvoice._id,
+        sourceType: 'invoice',
         createdBy: savedInvoice.createdBy
     });
 
@@ -524,13 +517,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
     let formatDate = new Date(transactionDate).toLocaleDateString();
 
     // ── Build the PDF payload ────────────────────────────────────────────────
-    // For FCMB invoices the template expects two extra fields:
-    //   • wibmoAmount       (number)  – portion payable to Wibmo Inc
-    //   • gsjxAmount        (number)  – portion payable to Global SJX
-    //   • wibmoAmountInWords (string)
-    //   • gsjxAmountInWords  (string)
-    // These should come in from the request body when the FCMB template is used.
-    // If they are absent the template gracefully hides those rows.
     const pdfPayload = {
         invoiceType,
         transactionDate: formatDate,
@@ -547,11 +533,11 @@ exports.createInvoice = asyncHandler(async (req, res) => {
         email: existingClient.email,
         taxName: "Global SJX Limited",
         taxNumber: "10582697-0001",
-        // FCMB-specific breakdown fields (safe to include for all; template ignores if absent)
-        wibmoAmount: invoiceData.wibmoAmount || null,
-        wibmoAmountInWords: invoiceData.wibmoAmountInWords || "",
-        gsjxAmount: invoiceData.gsjxAmount || null,
-        gsjxAmountInWords: invoiceData.gsjxAmountInWords || "",
+        // FCMB-specific breakdown fields
+        wibmoAmount: savedInvoice.wibmoAmount || null,
+        wibmoAmountInWords: savedInvoice.wibmoAmountInWords || "",
+        gsjxAmount: savedInvoice.gsjxAmount || null,
+        gsjxAmountInWords: savedInvoice.gsjxAmountInWords || "",
     };
 
     const pdfInvoice = await pdfGenerate(pdfPayload, templateName);
@@ -573,7 +559,6 @@ exports.createInvoice = asyncHandler(async (req, res) => {
 
     await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'created_invoice', "Revenue Management", `Created invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
 });
-
 
 // @route   PUT /api/revenue/updateInvoice/:id
 // @access  Private
@@ -622,13 +607,22 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 
         updatedInvoice.totalInvoiceFeePlusVat_ngn = totalInvoiceFeePlusVat_ngn;
         updatedInvoice.totalInvoiceFeePlusVat_usd = totalInvoiceFeePlusVat_usd;
-        updatedInvoice.save();
+
+        // Handle FCMB-specific amounts from request body
+        if (req.body.templateType === 'fcmb') {
+            if (req.body.wibmoAmount) updatedInvoice.wibmoAmount = parseFloat(req.body.wibmoAmount);
+            if (req.body.gsjxAmount) updatedInvoice.gsjxAmount = parseFloat(req.body.gsjxAmount);
+            if (req.body.wibmoAmountInWords) updatedInvoice.wibmoAmountInWords = req.body.wibmoAmountInWords;
+            if (req.body.gsjxAmountInWords) updatedInvoice.gsjxAmountInWords = req.body.gsjxAmountInWords;
+        }
+
+        await updatedInvoice.save();
 
         const existingAccount = await Account.findOne({ _id: existingClient.account });
 
-        // ── Resolve template based on bank name ──────────────────────────────
-        const templateName = resolveTemplate(updatedInvoice.invoiceType, existingAccount?.bankName || "");
-        console.log(`[updateInvoice] Using template: ${templateName} for bank: ${existingAccount?.bankName}`);
+        // ── Resolve template based on saved templateType ──────────────────────
+        const templateName = resolveTemplate(updatedInvoice.templateType || 'normal', updatedInvoice.invoiceType);
+        console.log(`[updateInvoice] Using template: ${templateName} (templateType: ${updatedInvoice.templateType})`);
 
         // ── Build PDF payload ────────────────────────────────────────────────
         const pdfPayload = {
@@ -648,10 +642,10 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
             taxName: "Global SJX Limited",
             taxNumber: "10582697-0001",
             // FCMB-specific breakdown fields
-            wibmoAmount: updatedInvoice.wibmoAmount || req.body.wibmoAmount || null,
-            wibmoAmountInWords: updatedInvoice.wibmoAmountInWords || req.body.wibmoAmountInWords || "",
-            gsjxAmount: updatedInvoice.gsjxAmount || req.body.gsjxAmount || null,
-            gsjxAmountInWords: updatedInvoice.gsjxAmountInWords || req.body.gsjxAmountInWords || "",
+            wibmoAmount: updatedInvoice.wibmoAmount || null,
+            wibmoAmountInWords: updatedInvoice.wibmoAmountInWords || "",
+            gsjxAmount: updatedInvoice.gsjxAmount || null,
+            gsjxAmountInWords: updatedInvoice.gsjxAmountInWords || "",
         };
 
         const pdfInvoice = await pdfGenerate(pdfPayload, templateName);
@@ -733,7 +727,6 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
     }
 });
 
-
 // @desc    Print an invoice as a PDF
 // @route   GET /api/revenue/printInvoice/:id
 // @access  Private
@@ -763,7 +756,6 @@ exports.printInvoice = asyncHandler(async (req, res) => {
     }
 });
 
-
 // @desc    Download invoice as PDF
 // @route   GET /api/revenue/downloadInvoice/:id
 // @access  Private
@@ -788,9 +780,9 @@ exports.downloadInvoice = asyncHandler(async (req, res, next) => {
 
         const existingAccount = await Account.findOne({ _id: existingClient.account });
 
-        // ── Resolve template based on bank name ──────────────────────────────
-        const templateName = resolveTemplate(invoice.invoiceType, existingAccount?.bankName || "");
-        console.log(`[downloadInvoice] Using template: ${templateName} for bank: ${existingAccount?.bankName}`);
+        // ── Resolve template based on saved templateType ──────────────────────
+        const templateName = resolveTemplate(invoice.templateType || 'normal', invoice.invoiceType);
+        console.log(`[downloadInvoice] Using template: ${templateName} (templateType: ${invoice.templateType})`);
 
         // Calculate due date (14 days from transaction date)
         let newDate = new Date(invoice.transactionDate);
@@ -828,7 +820,7 @@ exports.downloadInvoice = asyncHandler(async (req, res, next) => {
             bankName: existingAccount ? existingAccount.bankName : '',
             taxName: "Global SJX Limited",
             taxNumber: "10582697-0001",
-            // FCMB-specific breakdown fields (stored on the invoice document if saved)
+            // FCMB-specific breakdown fields
             wibmoAmount: invoice.wibmoAmount || null,
             wibmoAmountInWords: invoice.wibmoAmountInWords || "",
             gsjxAmount: invoice.gsjxAmount || null,
@@ -860,7 +852,6 @@ exports.downloadInvoice = asyncHandler(async (req, res, next) => {
     }
 });
 
-
 // @desc    Spool invoices based on filters
 // @route   GET /api/revenue/spoolInvoices
 // @access  Private
@@ -885,7 +876,6 @@ exports.spoolInvoices = asyncHandler(async (req, res) => {
     }
 });
 
-
 exports.getInvoiceData = async (invoiceNo) => {
     try {
         const invoiceData = await Revenue.findOne({ invoiceNo });
@@ -897,7 +887,6 @@ exports.getInvoiceData = async (invoiceNo) => {
     }
 };
 
-
 // @desc    Track payment status of an invoice
 // @route   GET /api/revenue/trackInvoice/:id
 // @access  Private
@@ -908,7 +897,6 @@ exports.trackInvoice = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Invoice status retrieved successfully', status: invoice.status });
 });
 
-
 // @desc    Send a payment reminder (disabled)
 // @route   POST /api/revenue/sendReminder/:id
 // @access  Private
@@ -916,14 +904,12 @@ exports.sendReminder = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Payment reminder functionality is currently disabled' });
 });
 
-
 // @desc    Generate and send receipt (disabled)
 // @route   POST /api/revenue/generateReceipt/:id
 // @access  Private
 exports.generateReceipt = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Receipt generation functionality is currently disabled' });
 });
-
 
 exports.softDelete = asyncHandler(async (req, res) => {
     const revenue = await Revenue.findByIdAndUpdate(req.body.id, { status: 'deleted' });
@@ -942,7 +928,6 @@ exports.softDelete = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     await logAction(req.user._id, user.name || user.firstname + " " + user.lastname, 'deleted_invoice', "Revenue Management", `Deleted invoice for client ${existingClient.name} by ${user.email}`, req.body.ip);
 });
-
 
 exports.deleteInvoice = async (req, res) => {
     try {
