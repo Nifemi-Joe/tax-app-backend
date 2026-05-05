@@ -19,7 +19,7 @@ const WHTSchema = new mongoose.Schema({
     },
     sourceModel: {
         type: String,
-        enum: ['Invoice', 'Expense'],
+        enum: ['Invoice', 'Expense', 'Revenue'], // Added 'Revenue' to the enum
         required: true
     },
     // For backward compatibility with existing invoice WHT
@@ -46,7 +46,7 @@ const WHTSchema = new mongoose.Schema({
         required: true,
         set: (value) => parseFloat(value.toFixed(2))
     },
-    // WHT calculations - REMOVED required: true since these are calculated
+    // WHT calculations
     whtRate: {
         type: Number,
         required: true,
@@ -57,7 +57,7 @@ const WHTSchema = new mongoose.Schema({
         default: 0,
         set: (value) => value ? parseFloat(value.toFixed(2)) : 0
     },
-    // VAT calculations - REMOVED required: true since these are calculated
+    // VAT calculations
     vatRate: {
         type: Number,
         default: 7.5
@@ -67,7 +67,7 @@ const WHTSchema = new mongoose.Schema({
         default: 0,
         set: (value) => value ? parseFloat(value.toFixed(2)) : 0
     },
-    // Amount Due = Transaction Amount - WHT + VAT - REMOVED required: true
+    // Amount Due = Transaction Amount - WHT + VAT
     amountDue: {
         type: Number,
         default: 0,
