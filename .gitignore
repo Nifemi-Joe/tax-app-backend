@@ -1,0 +1,14 @@
+node_modules/
+.cache/
+.cache/puppeteer/
+node_modules/puppeteer/
+secret_config.json
+
+# Ignore a specific folder (and everything inside it)
+node_modules/
+
+# Ignore all files with a specific extension (e.g., log files)
+*.log
+.env
+*.env
+

@@ -1,0 +1,24 @@
+function [D, eigenvalues, eigenvectors] = matrix_operations(A, B, C)
+    % Check for compatibility of matrices
+    [rowsA, colsA] = size(A);
+    [rowsB, colsB] = size(B);
+    [rowsC, colsC] = size(C);
+
+    if colsA ~= rowsB || colsB ~= rowsC || rowsA ~= colsA
+        error('Matrix dimensions are incompatible for multiplication.');
+    end
+
+    % Identity matrix
+    I = eye(rowsA);
+
+    % Matrix operations: D = (3A^2B - 2B^T C + I)^3
+    A_squared = A * A;
+    B_transpose = B';
+    part1 = 3 * A_squared * B;
+    part2 = 2 * B_transpose * C;
+    D = (part1 - part2 + I)^3;
+
+    % Eigenvalues and eigenvectors
+    [eigenvectors, eigenvaluesMatrix] = eig(D);
+    eigenvalues = diag(eigenvaluesMatrix);
+end
