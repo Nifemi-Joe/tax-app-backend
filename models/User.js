@@ -10,11 +10,17 @@ const crypto = require('crypto');
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-	name: {
+	firstname: {
 		type: String,
-		required: [true, 'Name is required'],
+		required: [true, 'First name is required'],
 		trim: true,
-		maxlength: [100, 'Name cannot exceed 100 characters'],
+		maxlength: [100, 'First name cannot exceed 100 characters'],
+	},
+	lastname: {
+		type: String,
+		required: [true, 'Last name is required'],
+		trim: true,
+		maxlength: [100, 'Last name cannot exceed 100 characters'],
 	},
 	email: {
 		type: String,
