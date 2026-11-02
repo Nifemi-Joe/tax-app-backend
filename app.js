@@ -128,7 +128,7 @@ function startServer() {
 
 	const limiter = rateLimit({
 		windowMs: 15 * 60 * 1000,
-		max: 100,
+		max: 100000,
 		message: {
 			responseCode: '429',
 			responseMessage: 'Too many requests from this IP, please try again later.',
@@ -239,6 +239,8 @@ function startServer() {
 	app.use('/api/tax-returns', require('./routes/taxReturnRoutes'));
 	app.use('/api/assets', require('./routes/assetRoutes'));
 	app.use('/api/security', require('./routes/securityRoutes'));
+	app.use('/api/audit', require('./routes/auditRoutes'));
+
 
 	console.log('16 - Routes configured');
 
