@@ -622,22 +622,7 @@
                         : data.totalInvoiceFee_usd.toLocaleString(undefined, {minimumFractionDigits:3, maximumFractionDigits:3}) %>
                 </td>
             </tr>
-            <!-- Wibmo Row -->
-            <% if (data.wibmoAmount) { %>
-            <tr>
-                <td>Amount Due Wibmo Inc</td>
-                <td class="recipient">Wibmo Inc</td>
-                <td class="fee"><%= data.wibmoAmount.toLocaleString(undefined, {minimumFractionDigits:3, maximumFractionDigits:3}) %></td>
-            </tr>
-            <% } %>
-            <!-- GSJX Row -->
-            <% if (data.gsjxAmount) { %>
-            <tr>
-                <td>Amount Due Global SJX Limited</td>
-                <td class="recipient">GSJX</td>
-                <td class="fee"><%= data.gsjxAmount.toLocaleString(undefined, {minimumFractionDigits:3, maximumFractionDigits:3}) %></td>
-            </tr>
-            <% } %>
+
 
             <!-- Instruction Header -->
             <tr>
@@ -648,34 +633,9 @@
             <tr>
                 <td colspan="3" class="instruction-cell">
                     <ol>
-                        <% if (data.wibmoAmount) { %>
-                        <li>
-                            Kindly transfer the sum of
-                            <strong><%= data.wibmoAmountInWords %> ($<%= data.wibmoAmount.toLocaleString(undefined, {minimumFractionDigits:3, maximumFractionDigits:3}) %>)</strong>
-                            to Wibmo Inc Account as detailed below:
-                            <br/><br/>
-                            <div class="wire-box">
-                                <div class="wire-title">INTERNATIONAL WIRE TRANSFER</div>
-                                <table>
-                                    <tr><td>PAY TO:</td><td>CITIBANK N.A<br/>DELAWARE, USA</td></tr>
-                                    <tr><td>ROUTING &amp; TRANSIT #:</td><td>\\ FW: 031100209</td></tr>
-                                    <tr><td>SWIFT CODE:</td><td>CITIUS33</td></tr>
-                                    <tr><td>FOR CREDIT OF:</td><td>WIBMO INC</td></tr>
-                                    <tr><td>FINAL CREDIT ACCOUNT #:</td><td>54185434</td></tr>
-                                </table>
-                            </div>
-                        </li>
-                        <% } %>
 
                         <li>Kindly avail us the transfer receipt. Please send to <strong>sina.joseph@globalsjxltd.com</strong></li>
 
-                        <% if (data.gsjxAmount) { %>
-                        <li>
-                            Transfer the NGN equivalent of
-                            <strong><%= data.gsjxAmountInWords %> ($<%= data.gsjxAmount.toLocaleString(undefined, {minimumFractionDigits:3, maximumFractionDigits:3}) %>)</strong>
-                            to the NGN account of Global SJX Limited (Please find account details below)
-                        </li>
-                        <% } %>
 
                         <li>Please ensure the NGN equivalent of the <strong>WHT</strong> is debited into Global SJX Limited NGN Account</li>
                     </ol>
